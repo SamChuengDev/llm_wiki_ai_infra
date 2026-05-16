@@ -57,6 +57,12 @@
 
 ---
 
+## [2026-05-16] ingest-bugfix | VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)
+- **来源**: Agent 推断与诊断会话上下文 (vlm_0516_113330_229_nothink_data_replay_bs2.log)
+- **提取点 1**: 确定了 `logprobs_diff` 在极短回复且没有 `<think>` prefill 时会出现极端放大的根因：Rollout 和 Actor 的 Attention 在超短前向传播中存在严重结构分布发散。
+- **提取点 2**: 指出了 xLLM 引擎的 `CustomModeReasoningParser` 因配置为空而被禁用的级联失效过程，并在 `run.sh` 中强行注入开启配置（`enabled=True`, `prefix='<think>'`）。
+- **提取点 3**: 提炼了规避 RL Trajectory 引擎将 base64 图片替换为 `..hidden..` 机制的方法，通过开发专用脚本直接从原 `parquet` 提取数据以解决数据重放 DataLoader discard 报错问题。
+
 ## [2026-04-27] ingest-fact | Fact: VLM 2.5B RL NPU Rollout 阶段的真实耗时约束
 - **来源**: 用户痛点反馈及端到端耗时日志 (`outputs/logs/vlm_bs_128_0426_203707.log`)
 - **提取点 1**: 提取并归档了 `bsz=128` 并且 `generation_n=8` 时产生 1024 个请求的长序列 Rollout，其物理耗时约为 54 分钟（总体 Step1 耗时约 60 分钟），严禁将其与 ST 测试混为一谈导致错误预估。

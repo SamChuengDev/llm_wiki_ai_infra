@@ -8,6 +8,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/vlm_thinking_parser_logpdiff_spike|Bugfix: VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)]]
 - [[wiki/00_bugfix/host_oom_glibc_arena|Bugfix: 宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)]]
 - [[wiki/00_bugfix/pytorch_to_empty_libc_leak_and_precision|Bugfix: PyTorch to_empty() 精度丢失与 libc 碎片化泄漏连环坑]]
 - [[wiki/00_bugfix/npu_empty_virt_addr_cache_oom|Bugfix: empty_virt_addr_cache 导致 NPU 物理显存泄露引发 OOM]]
@@ -87,6 +88,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-05-16]` 排错: [[wiki/00_bugfix/vlm_thinking_parser_logpdiff_spike|Bugfix: VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)]]
 - `[2026-05-09]` 排错: [[wiki/00_bugfix/host_oom_glibc_arena|宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)]]
 - `[2026-04-14]` 排错: [[wiki/00_bugfix/cann_aclnngather_zero_length_crash|CANN aclnnGather 算子零长维报错与规避]]
 - `[2026-04-12]` 事实: [[wiki/05_fact/vlm_2b5_inference_service_golden_config|VLM 2B5 推理服务化部署黄金配置]]
