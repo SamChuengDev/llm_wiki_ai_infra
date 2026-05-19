@@ -8,6 +8,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
+- [[wiki/00_bugfix/vit_cache_miss|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
 - [[wiki/00_bugfix/vlm_thinking_parser_logpdiff_spike|Bugfix: VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)]]
 - [[wiki/00_bugfix/host_oom_glibc_arena|Bugfix: 宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)]]
 - [[wiki/00_bugfix/pytorch_to_empty_libc_leak_and_precision|Bugfix: PyTorch to_empty() 精度丢失与 libc 碎片化泄漏连环坑]]
@@ -88,6 +90,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-05-19]` 排错: [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
+- `[2026-05-19]` 排错: [[wiki/00_bugfix/vit_cache_miss|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
 - `[2026-05-16]` 排错: [[wiki/00_bugfix/vlm_thinking_parser_logpdiff_spike|Bugfix: VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)]]
 - `[2026-05-09]` 排错: [[wiki/00_bugfix/host_oom_glibc_arena|宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)]]
 - `[2026-04-14]` 排错: [[wiki/00_bugfix/cann_aclnngather_zero_length_crash|CANN aclnnGather 算子零长维报错与规避]]

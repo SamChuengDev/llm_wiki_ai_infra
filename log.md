@@ -1,3 +1,9 @@
+## [2026-05-19] ingest-bugfix | VLM ViT 缓存穿透与动态 resize_ratio/use_anyres 导致的不一致
+- **来源**: Agent 推断与诊断会话上下文 (vlm_0519_092103_2450_verify_cache_miss_magnitude_bs128.log)
+- **提取点 1**: 确定了导致 100% Cache Miss 的根本原因并非单纯的文件读写延迟，而是 `VlmDialogProcessor` 在计算 hash 时引入了基于图像分辨率动态波动的 `resize_ratio` 和 `use_anyres` 参数，使 `CityHash64` 失效。
+- **提取点 2**: 明确了通过在 Actor 端 (`template.py`) 直接实例化并调用同款 `VlmDialogProcessor` 来严格提取哈希值，从而实现数学层面上的双端 100% 缓存一致性。
+- **提取点 3**: 修改了缓存下发策略，废弃了手动拼凑 `use_anyres` 后缀并模拟 Hash 的做法，彻底解决了依赖硬编码导致的高频 GLOBAL MISS，同时兼容单/多图。
+
 ## [2026-05-09] ingest-bugfix | 宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)
 - **来源**: Agent 推断与诊断会话上下文 (vlm_0508_190211.log)
 - **提取点 1**: 确定了导致 150GB+ 物理内存黑洞的主因是 glibc 在 33+ 个并发 Python 进程下产生的 malloc arena 碎片化。
@@ -56,6 +62,18 @@
 格式规范：`## [YYYY-MM-DD] <operation> | <title>`，支持 `grep "^## \[" log.md | tail -5` 快速检索。
 
 ---
+
+## [2026-05-19] ingest-bugfix | VLM ViT 缓存穿透与跨边界 Hash 不一致
+- **来源**: Agent 推断与诊断会话上下文 (vlm_0519_172215_2450_verify_cache_miss_magnitude_bs2.log)
+- **提取点 1**: 确定了导致 ViT 缓存部分穿透 (Actor 报 `GLOBAL MISS`) 的根因是跨边界的 Hash 标尺不一致。Rollout (xLLM) 生成并存入缓存的是请求 ID 作为 CityHash64，而 Actor 在重算 Hash 时生成了不同的长整型 ID，导致去 `dev/shm` 查询失败。
+- **提取点 2**: 明确了通过在 Actor 端 (`template.py`) 截获 `VlmDialogProcessor` 生成的 `image_hashes[0]`，并通过 `image_raw_hashes` 将其透传至 `_inject_vit_cache` 来彻底打通两端 Hash 锁的修正方案。
+- **提取点 3**: 修改了 Rollout `xpu_inferencer.py` 获取缓存 Key 的逻辑，使其优先通过 `gen_ctx.request_ids[0]` 读取 Actor 对齐好的 `CityHash64`，实现了稳定的 `GLOBAL HIT Bypass` 效果。
+
+## [2026-05-18] ingest-bugfix | VLM ViT 缓存穿透与 CityHash 跨端不对齐导致的 100% Cache Miss
+- **来源**: Agent 推断与诊断会话上下文 (vlm_0518_223521_2450_verify_cache_miss_magnitude_bs2.log)
+- **提取点 1**: 确定了导致 ViT 缓存 100% 穿透的根因是跨进程哈希算法不匹配，Rollout 使用 19位 `CityHash64` 而 Actor 默认使用了 39位 `CityHash128`。
+- **提取点 2**: 指出了多进程缓存未命中不仅带来冗余计算，其重算耗时差异会引发 FSDP `AllGather` 超时死锁，且软哈希兜底会引入 `1 ULP` 精度底噪干扰 `logpdiff`。
+- **提取点 3**: 总结了通过在 `template.py` 中绕过默认哈希逻辑，精确复刻 Rollout 的 `CityHash64` 公式，并将正确哈希列表沿 Batch 透传至 `actor.py` 内部展平消费，最终达成 100% 精确命中的终极修复方案。
 
 ## [2026-05-16] ingest-bugfix | VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)
 - **来源**: Agent 推断与诊断会话上下文 (vlm_0516_113330_229_nothink_data_replay_bs2.log)
