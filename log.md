@@ -1,3 +1,8 @@
+## [2026-05-20] ingest-bugfix | xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError
+- **来源**: Client 并发 stress 压测与服务端日志 (dp16ep16_srv_*.log)
+- **提取点 1**: 确定了在高并发压测下，Eviction 机制由于访问已被 `finish_query` 清空了 `multi_modal_data` 的 `ImageEncoderQuery` 的 `mm_token_length` 与 `mm_data_hash_id` 属性，导致触发 `AssertionError` 崩溃。
+- **提取点 2**: 明确了通过在创建时持久化 `token_len` 和 `hash_id` 属性，并在 `multi_modal_data` 被清空后回退使用缓存属性，从而实现安全安全的 Eviction，打通了并发稳定性。
+
 ## [2026-05-19] ingest-bugfix | VLM ViT 缓存穿透与动态 resize_ratio/use_anyres 导致的不一致
 - **来源**: Agent 推断与诊断会话上下文 (vlm_0519_092103_2450_verify_cache_miss_magnitude_bs128.log)
 - **提取点 1**: 确定了导致 100% Cache Miss 的根本原因并非单纯的文件读写延迟，而是 `VlmDialogProcessor` 在计算 hash 时引入了基于图像分辨率动态波动的 `resize_ratio` 和 `use_anyres` 参数，使 `CityHash64` 失效。
@@ -62,6 +67,11 @@
 格式规范：`## [YYYY-MM-DD] <operation> | <title>`，支持 `grep "^## \[" log.md | tail -5` 快速检索。
 
 ---
+
+## [2026-05-20] ingest-bugfix | xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError
+- **来源**: Client 并发 stress 压测与服务端日志 (dp16ep16_srv_*.log)
+- **提取点 1**: 确定了在高并发压测下，Eviction 机制由于访问已被 `finish_query` 清空了 `multi_modal_data` 的 `ImageEncoderQuery` 的 `mm_token_length` 与 `mm_data_hash_id` 属性，导致触发 `AssertionError` 崩溃。
+- **提取点 2**: 明确了通过在创建时持久化 `token_len` 和 `hash_id` 属性，并在 `multi_modal_data` 被清空后回退使用缓存属性，从而实现安全安全的 Eviction，打通了并发稳定性。
 
 ## [2026-05-19] ingest-bugfix | VLM ViT 缓存穿透与跨边界 Hash 不一致
 - **来源**: Agent 推断与诊断会话上下文 (vlm_0519_172215_2450_verify_cache_miss_magnitude_bs2.log)
