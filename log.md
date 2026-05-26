@@ -1,3 +1,9 @@
+## [2026-05-26] ingest-precision | VLM 2.5B RL logprobs_diff 长线漂移精度对齐
+- **来源**: 诊断会话上下文及调试计划日志 (logpdiff_drift_debug_plan.md)
+- **提取点 1**: 确定了长线训练中训推一致性 `logprobs_diff` 漂移的主要根因在于 rollout 侧 KV Cache/Prefix Cache 的跨请求污染，它无视了环境的禁用设置而被悄悄打开并复用。
+- **提取点 2**: 明确了次要主因和误差放大器为 `thinking_parser` 缺失强制前缀约束，导致模型策略滑向 no-think / 乱码前缀，超短不规则文本极易放大打分噪声。
+- **提取点 3**: 提炼出消除 prefix cache 请求级覆盖并锁死 `cached_length` 恒为 0，同时在 `run.sh` 中显式硬配置 thinking_parser 强制 `<think>` prefill 的对齐修复方案。在 124 step 长跑下 diff 稳定在 0.02x 健康水平。
+
 ## [2026-05-20] ingest-bugfix | xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError
 - **来源**: Client 并发 stress 压测与服务端日志 (dp16ep16_srv_*.log)
 - **提取点 1**: 确定了在高并发压测下，Eviction 机制由于访问已被 `finish_query` 清空了 `multi_modal_data` 的 `ImageEncoderQuery` 的 `mm_token_length` 与 `mm_data_hash_id` 属性，导致触发 `AssertionError` 崩溃。

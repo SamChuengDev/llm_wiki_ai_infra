@@ -50,6 +50,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/vlm_rl_actor_blind_diff|VLM RL 架构级概率不一致发散 (XLLM -100 Token 丢失)]]
 - [[wiki/02_precision/vlm_2b5_w8a8_gibberish|VLM 2.5B W8A8 推理高熵乱码问题 (RoPE 冲突)]]
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散 (400x vs 20x)]]
+- [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 ### 3. [[wiki/03_tuning/index|性能调优 (Tuning)]]
 - HCCL 并发与通信优化
 - 显存复用与 OOM 解决
@@ -91,6 +92,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-05-26]` 精度对齐: [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 - `[2026-05-20]` 排错: [[wiki/00_bugfix/encoder_cache_eviction_assertion|Bugfix: xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError]]
 - `[2026-05-19]` 排错: [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
 - `[2026-05-19]` 排错: [[wiki/00_bugfix/vit_cache_miss|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
