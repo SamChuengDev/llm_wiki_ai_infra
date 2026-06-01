@@ -5,6 +5,7 @@ last_updated: 2026-04-11
 source: []
 confidence: high
 status: active
+open_questions: []
 ---
 
 # 04 框架特有逻辑 (Frameworks)

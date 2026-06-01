@@ -5,6 +5,7 @@ last_updated: "2026-04-14"
 source: "unknown"
 confidence: 5
 status: "verified"
+open_questions: []
 ---
 
 # CANN aclnnGather 算子零长维度边界崩溃

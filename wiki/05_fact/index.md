@@ -3,6 +3,9 @@ title: "事实分类索引 (Facts)"
 tags: [index, status/active]
 last_updated: 2026-05-29
 source: []
+confidence: high
+status: active
+open_questions: []
 ---
 
 # 事实知识 (Facts)

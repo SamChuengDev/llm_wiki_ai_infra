@@ -5,6 +5,7 @@ last_updated: 2026-04-11
 source: []
 confidence: high
 status: active
+open_questions: []
 ---
 
 # 01 算子迁移 (Operators)

@@ -7,6 +7,9 @@ source:
   - "outputs/logs/vlm_0529_142128_torch_infer_2b5_bs2.log"
   - "outputs/logs/vlm_0529_143654_torch_infer_2b5_bs2.log"
   - "maas_engine_torch_infer/outputs/logs/vlm_0528_002344.log"
+confidence: high
+status: active
+open_questions: []
 ---
 
 # xpu_gpt + torch infer 合并验证排查清单
@@ -86,5 +89,6 @@ torch infer 源分支 `vlm_0528_002344.log` 里，bsz=128 的 41 step 可稳定�
 ## Related
 
 - [[wiki/00_bugfix/npu_empty_virt_addr_cache_oom|Bugfix: empty_virt_addr_cache 导致 NPU 物理显存泄露引发 OOM]]
+- [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
 - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散]]

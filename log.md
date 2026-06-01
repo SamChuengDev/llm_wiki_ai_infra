@@ -1,3 +1,9 @@
+## [2026-06-01] lint | health check
+- **扫描**: 46 个 Markdown 文件（根 `index.md`、`log.md` 与 44 个 `wiki/**/*.md` 页面）。
+- **发现**: 初扫发现 25 个断链、2 个孤立页面、10 个 frontmatter 字段问题、15 个非强制反链缺口；未发现 `status: active` 超 90 天页面或明确矛盾标记。
+- **自动修复**: 修正 3 处 `vit_cache_miss` 改名断链；将 `ep16_decode_deadlock_pd_count_fix` 接入根索引与 Bugfix 分类索引；补齐 10 个 frontmatter 字段问题；为 xpu_gpt graph cache bugfix 与 torch infer merge checklist 增加 1 条反链。
+- **待人工处理**: 剩余 22 个断链，多数是规划占位或尚未成文页面（如 `encoder_cache_eviction_assertion`、`npu_empty_virt_addr_cache_oom`、`vllm_npu`、`mapping_table` 等）；15 个宽松关联型反链缺口未自动补齐，避免制造弱关联。
+
 ## [2026-06-01] ingest-bugfix | xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言
 - **来源**: 24140 xpu_gpt 图模式排查会话，失败日志 `vlm_0601_170605_24140_xg_graph_bs128.log`，验证日志 `vlm_0601_172008_24140_xg_graph_bs128.log`，历史可跑通对照 `vlm_0526_105736_2450_allcodes_ge_graph_bs128_filter_432steps.log`。
 - **提取点 1**: 失败签名为 torchair cached graph 调用中的 `AssertionError: expected size 64==64, stride 65==25 ... expected size 65==25`，发生在 xpu_gpt Eagle target decode graph verification 路径。

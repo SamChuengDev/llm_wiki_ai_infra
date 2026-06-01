@@ -2,8 +2,14 @@
 title: "EP16 MoE Decode Deadlock: pd_count Missing Prefill-Ready Requests"
 date: 2026-04-28
 tags: [ep16, moe, deadlock, all_to_all, hccl, decode, dp_sync]
+last_updated: 2026-04-28
+source:
+  - tests/xllm_xg_st/xllm_client_llm.sh
+  - 3rdparty/xllm/ark_text_stress_test.py
 severity: critical
 status: fixed
+confidence: high
+open_questions: []
 ---
 
 # EP16 MoE Decode Deadlock — pd_count Missing Prefill-Ready Requests

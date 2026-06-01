@@ -120,6 +120,6 @@ train/rollout/logprobs_diff:0.0167843
   - 对比 `[ViT-Probe] path=BYPASS` 的 `mean`，健康区间约 `-35~-40`，明显偏到 `-68~-70` 时优先怀疑 cache 污染。
   - 若 mean 健康但 shape 总量只有健康基线约 `1/4`，优先怀疑 cached `vit_embeds` 被 sequence parallel 错切。
 - 关联知识点:
-  - [[wiki/00_bugfix/vit_cache_miss|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
+  - [[wiki/00_bugfix/vit_cache_miss_cityhash|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
   - [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
   - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
