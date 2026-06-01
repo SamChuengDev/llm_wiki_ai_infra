@@ -1,3 +1,9 @@
+## [2026-06-01] ingest-bugfix | M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败
+- **来源**: 2450 xpu_gpt + Companion ViT 启动失败日志 `vlm_0601_161331_2450_after_merge_ge_graph_bs128.log`，修复验证日志 `vlm_0601_165516_2450_after_merge_bs128.log`，代码路径 `3rdparty/xpu_gpt/xpu_gpt/adapter/xllm_adapter/xpu_loader.py`。
+- **提取点 1**: 失败签名为 `[Companion] ArkLauncher launch failed` 后，`_resolve_vit_checkpoint()` 只查 `/share_data/2b5_saved_model_for_xg/saved_model/global_step_0` 并报 `ValueError: ViT model not found`。
+- **提取点 2**: 修复为 ViT checkpoint 解析增加 fallback：优先 `saved_model/global_step_*/vit.*`，随后查 `saved_model/vit.*` 与模型根目录 `vit.*`；多个 `global_step_*` 显式报错，避免静默选错。
+- **提取点 3**: 验证日志显示 `Use ViT cruise config ... checkpoint: .../vit.safetensors`、`ArkLauncher launch done`，并已进入多轮 `global_step`；该结论只覆盖启动加载问题，不代表 70+ / 200 step 长线精度验证完成。
+
 ## [2026-06-01] lint | health check
 - **扫描**: 46 个 Markdown 文件（根 `index.md`、`log.md` 与 44 个 `wiki/**/*.md` 页面）。
 - **发现**: 初扫发现 25 个断链、2 个孤立页面、10 个 frontmatter 字段问题、15 个非强制反链缺口；未发现 `status: active` 超 90 天页面或明确矛盾标记。

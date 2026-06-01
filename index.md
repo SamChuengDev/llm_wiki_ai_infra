@@ -9,6 +9,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
 - [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|Bugfix: xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
+- [[wiki/00_bugfix/vlm_2b5_vit_checkpoint_fallback|Bugfix: M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败]]
 - [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
 - [[wiki/00_bugfix/vit_cache_miss_cityhash|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
 - [[wiki/00_bugfix/vlm_torch_infer_vit_cache_sp_slice_logpdiff|Bugfix: torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸]]
@@ -98,6 +99,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🕒 最近更新
 
 - `[2026-06-01]` 排错: [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
+- `[2026-06-01]` 排错: [[wiki/00_bugfix/vlm_2b5_vit_checkpoint_fallback|M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败]]
 - `[2026-05-30]` 排错: [[wiki/00_bugfix/vlm_torch_infer_vit_cache_sp_slice_logpdiff|torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸]]
 - `[2026-05-29]` 事实: [[wiki/05_fact/torch_infer_merge_debug_checklist|xpu_gpt + torch infer 合并验证排查清单]]
 - `[2026-05-27]` 性能调优: [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
