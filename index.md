@@ -8,8 +8,10 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|Bugfix: xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
 - [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
 - [[wiki/00_bugfix/vit_cache_miss|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
+- [[wiki/00_bugfix/vlm_torch_infer_vit_cache_sp_slice_logpdiff|Bugfix: torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸]]
 - [[wiki/00_bugfix/encoder_cache_eviction_assertion|Bugfix: xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError]]
 - [[wiki/00_bugfix/vlm_thinking_parser_logpdiff_spike|Bugfix: VLM RL 训练中 thinking_parser 缺失导致 logpdiff 极端 Spike (0.3+)]]
 - [[wiki/00_bugfix/host_oom_glibc_arena|Bugfix: 宿主机 OOM 与 SYS 物理内存持续增长 (glibc malloc arena 碎片化)]]
@@ -52,6 +54,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散 (400x vs 20x)]]
 - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 ### 3. [[wiki/03_tuning/index|性能调优 (Tuning)]]
+- [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
 - HCCL 并发与通信优化
 - 显存复用与 OOM 解决
 - 算子融合 (Operator Fusion) 策略
@@ -67,6 +70,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/05_fact/vlm_2b5_inference_service_golden_config|VLM 2B5 推理服务化部署黄金配置 (DP16/EP16)]]
 - [[wiki/05_fact/vlm_2b5_rl_rollout_quantization|VLM 2.5B RL 训推转换低精度 Rollout 量化实现 (D_W8A8C8)]]
 - [[wiki/05_fact/vlm_2b5_rl_rollout_timing|Fact: VLM 2.5B RL NPU Rollout 阶段的真实耗时约束]]
+- [[wiki/05_fact/torch_infer_merge_debug_checklist|Fact: xpu_gpt + torch infer 合并验证排查清单]]
 - 约束与设计事实 (架构隔离、Rank 配置等)
 
 ---
@@ -92,6 +96,10 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-01]` 排错: [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
+- `[2026-05-30]` 排错: [[wiki/00_bugfix/vlm_torch_infer_vit_cache_sp_slice_logpdiff|torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸]]
+- `[2026-05-29]` 事实: [[wiki/05_fact/torch_infer_merge_debug_checklist|xpu_gpt + torch infer 合并验证排查清单]]
+- `[2026-05-27]` 性能调优: [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
 - `[2026-05-26]` 精度对齐: [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 - `[2026-05-20]` 排错: [[wiki/00_bugfix/encoder_cache_eviction_assertion|Bugfix: xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError]]
 - `[2026-05-19]` 排错: [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]

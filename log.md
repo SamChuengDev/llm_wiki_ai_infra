@@ -1,3 +1,27 @@
+## [2026-06-01] ingest-bugfix | xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言
+- **来源**: 24140 xpu_gpt 图模式排查会话，失败日志 `vlm_0601_170605_24140_xg_graph_bs128.log`，验证日志 `vlm_0601_172008_24140_xg_graph_bs128.log`，历史可跑通对照 `vlm_0526_105736_2450_allcodes_ge_graph_bs128_filter_432steps.log`。
+- **提取点 1**: 失败签名为 torchair cached graph 调用中的 `AssertionError: expected size 64==64, stride 65==25 ... expected size 65==25`，发生在 xpu_gpt Eagle target decode graph verification 路径。
+- **提取点 2**: 诊断确认本次请求进入 `decode_graph` 前 `kv_idx` 已是 `(64,65)`，旧 `(64,25)` 更符合 stale `compile_cache` 中旧 12k 长度口径 GE/OM 图元数据复用，而不是实时输入 shape 错误。
+- **提取点 3**: 修复为 xpu_gpt 后端按 `max_sequence_length` 隔离 `XPU_GRAPH_CACHE_DIR`，例如 `compile_cache/maxlen_32768`；验证跨过旧崩溃点并到达 `global_step=3`，但仍不替代 70+ step / 200 step 长线精度结论。
+
+## [2026-05-30] ingest-bugfix | torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸
+- **来源**: 24189 torch infer 排查会话及日志 (`vlm_0530_190651_24189_torchinfer_bs128.log`, `vlm_0530_193421_24189_torchinfer_bs128.log`, `vlm_0530_195746_24189_torchinfer_bs128.log`) 与健康对照 (`vlm_0529_230400_2450_bs128_torch_infer_2b5_bs128.log`)。
+- **提取点 1**: 确定 step 级 `logprobs_diff` 从 `0.079/0.061` 回落到 `0.0179/0.0168` 的直接修复来自两个动作：启动时清空全局 ViT cache，以及禁止对 cached `vit_embeds` 做 sequence-dim SP 切片。
+- **提取点 2**: 明确 cached `vit_embeds` 与 `pixel_values` 不是同一种张量语义。cached embedding 应完整传给模型作为 `image_embeds`，由模型内部对 hidden-dim 做 SP 切分；外层按 dim=0 切片会把图像 token 数切成约 `1/4`。
+- **提取点 3**: 总结了诊断指标：BYPASS ViT mean 偏到 `-68~-70` 优先怀疑 stale cache；mean 回到 `-35~-40` 但 BYPASS shape 总量仍只有健康日志约 `1/4` 时，优先怀疑 sequence parallel 误切。
+
+## [2026-05-29] ingest-fact | xpu_gpt + torch infer 合并验证排查清单
+- **来源**: torch infer 合并验证会话及日志 (`vlm_0529_142128_torch_infer_2b5_bs2.log`, `vlm_0529_143654_torch_infer_2b5_bs2.log`, 源分支 `vlm_0528_002344.log`)。
+- **提取点 1**: 明确 OOM 与 `logprobs_diff` 异常必须拆开判断；最新日志无 OOM/Traceback 时，应把显存探针作为监控项，而不是继续盲目调 batch 或 KV 参数。
+- **提取点 2**: 记录 Ray `runtime_env` 相同不代表代码包相同，必须同时核对 `runtime_env.working_dir` 的 Ray package、源码行号和远端同步状态。
+- **提取点 3**: 校准 torch infer 中 `XLLM_INFERENCER_KERNEL_BACKEND=xpu` 的含义：它是 xLLM torch layer registry 名，不等于 `xperf_gpt`；`Unknown kernel backend: xpu` 应优先查 `layers/xpu` 注册和同步。
+
+## [2026-05-27] ingest-tuning | EP 零冗余权重同步与 Resharding 性能优化
+- **来源**: 诊断会话上下文及 5-step 测试日志 (vlm_0527_142116_2739_verify_eptrans_bs128.log)
+- **提取点 1**: 确定了 16EP NPU 多卡多模态强化学习训练大 Step 更新权重时的通信与显存瓶颈为 MoE 专家权重的全量 Broadcast。
+- **提取点 2**: 明确了通过 PyTorch 原生 `dist.scatter` 进行零冗余同步（ZeroSync），以及基于共享内存（SHM）“先合后分”以动态适配 `train_ep != infer_ep` 的自适应 Resharding 优化方案。
+- **提取点 3**: 提炼出开启 `MAAS_XLLM_EP_ZERO_REDUNDANT_SYNC=1` 的调优步骤，实测在 bs=128 下权重同步平均耗时缩短 1.86秒（3.36%），稳态单步耗时缩短 6.65秒（11.26%），并将数据接收缓冲区压缩至 1/16，彻底消除了权重同步瞬时显存分配引发的连环 OOM。
+
 ## [2026-05-26] ingest-precision | VLM 2.5B RL logprobs_diff 长线漂移精度对齐
 - **来源**: 诊断会话上下文及调试计划日志 (logpdiff_drift_debug_plan.md)
 - **提取点 1**: 确定了长线训练中训推一致性 `logprobs_diff` 漂移的主要根因在于 rollout 侧 KV Cache/Prefix Cache 的跨请求污染，它无视了环境的禁用设置而被悄悄打开并复用。
@@ -73,6 +97,18 @@
 格式规范：`## [YYYY-MM-DD] <operation> | <title>`，支持 `grep "^## \[" log.md | tail -5` 快速检索。
 
 ---
+
+## [2026-05-27] ingest-tuning | EP 零冗余权重同步与 Resharding 性能优化
+- **来源**: 诊断会话上下文及 5-step 测试日志 (vlm_0527_142116_2739_verify_eptrans_bs128.log)
+- **提取点 1**: 确定了 16EP NPU 多卡多模态强化学习训练大 Step 更新权重时的通信与显存瓶颈为 MoE 专家权重的全量 Broadcast。
+- **提取点 2**: 明确了通过 PyTorch 原生 `dist.scatter` 进行零冗余同步（ZeroSync），以及基于共享内存（SHM）“先合后分”以动态适配 `train_ep != infer_ep` 的自适应 Resharding 优化方案。
+- **提取点 3**: 提炼出开启 `MAAS_XLLM_EP_ZERO_REDUNDANT_SYNC=1` 的调优步骤，实测在 bs=128 下权重同步平均耗时缩短 1.86秒（3.36%），稳态单步耗时缩短 6.65秒（11.26%），并将数据接收缓冲区压缩至 1/16，彻底消除了权重同步瞬时显存分配引发的连环 OOM。
+
+## [2026-05-26] ingest-precision | VLM 2.5B RL logprobs_diff 长线漂移精度对齐
+- **来源**: 诊断会话上下文及调试计划日志 (logpdiff_drift_debug_plan.md)
+- **提取点 1**: 确定了长线训练中训推一致性 `logprobs_diff` 漂移的主要根因在于 rollout 侧 KV Cache/Prefix Cache 的跨请求污染，它无视了环境的禁用设置而被悄悄打开并复用。
+- **提取点 2**: 明确了次要主因和误差放大器为 `thinking_parser` 缺失强制前缀约束，导致模型策略滑向 no-think / 乱码前缀，超短不规则文本极易放大打分噪声。
+- **提取点 3**: 提炼出消除 prefix cache 请求级覆盖并锁死 `cached_length` 恒为 0，同时在 `run.sh` 中显式硬配置 thinking_parser 强制 `<think>` prefill 的对齐修复方案。在 124 step 长跑下 diff 稳定在 0.02x 健康水平。
 
 ## [2026-05-20] ingest-bugfix | xLLM 并发压测下 EncoderResultCache 驱逐触发 AssertionError
 - **来源**: Client 并发 stress 压测与服务端日志 (dp16ep16_srv_*.log)
