@@ -8,7 +8,9 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|Bugfix: torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
 - [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|Bugfix: xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
+- [[wiki/00_bugfix/vlm_rl_xg_hash_image_size_check|Bugfix: VLM 2B5 xg RL hash 路径未关闭 xLLM 图片尺寸检查导致 InvalidImageURL]]
 - [[wiki/00_bugfix/vlm_2b5_vit_checkpoint_fallback|Bugfix: M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败]]
 - [[wiki/00_bugfix/vlm_cache_hash_mismatch|Bugfix: VLM Cache Miss Due to Cross-Boundary Hash Mismatch]]
 - [[wiki/00_bugfix/vit_cache_miss_cityhash|Bugfix: ViT Cache 100% Miss & Race Condition Mismatch]]
@@ -98,6 +100,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-02]` 排错: [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
+- `[2026-06-01]` 排错: [[wiki/00_bugfix/vlm_rl_xg_hash_image_size_check|VLM 2B5 xg RL hash 路径未关闭 xLLM 图片尺寸检查导致 InvalidImageURL]]
 - `[2026-06-01]` 排错: [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
 - `[2026-06-01]` 排错: [[wiki/00_bugfix/vlm_2b5_vit_checkpoint_fallback|M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败]]
 - `[2026-05-30]` 排错: [[wiki/00_bugfix/vlm_torch_infer_vit_cache_sp_slice_logpdiff|torch infer cached ViT embedding 被 SP 误切导致 logprobs_diff 爆炸]]

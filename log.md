@@ -1,3 +1,15 @@
+## [2026-06-02] ingest-bugfix | torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化
+- **来源**: merge 慢日志 `outputs/logs/vlm_0601_205541_24189_torchinfer_align_ypq_bs128.log`，源目录健康对照 `/Users/bytedance/posttrain/codes/maas_engine_torch_infer/outputs/logs/vlm_0528_002344.log`，修复文件 `maas_finetune/trainer/rl/rollout/ray_driver.py`。
+- **提取点 1**: 失败签名不是 Traceback，而是 `train/timing/data=966.465s`、step `1131.7309s`；Hydra 配置为 `scheduler/model batch=512`，但 xLLM 实际启动为 `max_schedule_batch_size=64` 与 `model max_batch=64`。
+- **提取点 2**: 调度证据显示 merge 日志只活跃 `DECODING:64` 且 `PREFILL:134` 堆积，async `first_token/enqueue/generate_waiting_time` 可达百秒级；源目录同口径日志可见 `DECODING:256`，first token/enqueue 多为 `3~5s`。
+- **提取点 3**: 根因定位到 `ray_driver._setup_envs()` 先写入 rollout 512，随后 `VLM_DEFAULT_ENVS` 覆盖 `XLLM_SCHEDULER_MAX_SCHEDULE_BATCH_SIZE` 与 `XLLM_MODEL_MAX_BATCH_SIZE` 为 64；修复为 VLM 默认合并后重新应用显式 rollout 配置。已通过 py_compile、`_setup_envs` 与 xLLM Launcher 烟测，尚需新 RL 日志确认 step time 恢复。
+
+## [2026-06-01] ingest-bugfix | VLM 2B5 xg RL hash 路径未关闭 xLLM 图片尺寸检查导致 InvalidImageURL
+- **来源**: 2450 xg 失败日志 `outputs/logs/vlm_0530_204441_2450_xg_bs128.log`，修复验证日志 `outputs/logs/vlm_0601_093232_2450_xg_bs128.log`，提交 `039c20a3420c0e4f0870396b595d3bbb9a9b92cf`。
+- **提取点 1**: 失败签名为 DataProcessor 阶段 `InvalidImageURL: width = 6840, height = 3549, Maximum allowed dimension: 6000 pixels`，发生在 xg 运行到约 `global_step=19` 后处理下一批样本时。
+- **提取点 2**: 证据指向 Actor/hash 路径手动构造 `VLMDialogProcessor` 时未显式传 `check_image_size`；仅设置 `XLLM_PROCESSOR_CHECK_IMAGE_SIZE=0` 不会改变构造参数默认值 `True`。
+- **提取点 3**: 修复为 `RLTemplate._encode_image()` 显式传入 `check_image_size=_env_bool("XLLM_PROCESSOR_CHECK_IMAGE_SIZE", False)`；2450 xg 验证到 `global_step=20`，未再出现 `InvalidImageURL` / Traceback。该结论不替代 70+ / 200 step 长线精度漂移验证。
+
 ## [2026-06-01] ingest-bugfix | M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败
 - **来源**: 2450 xpu_gpt + Companion ViT 启动失败日志 `vlm_0601_161331_2450_after_merge_ge_graph_bs128.log`，修复验证日志 `vlm_0601_165516_2450_after_merge_bs128.log`，代码路径 `3rdparty/xpu_gpt/xpu_gpt/adapter/xllm_adapter/xpu_loader.py`。
 - **提取点 1**: 失败签名为 `[Companion] ArkLauncher launch failed` 后，`_resolve_vit_checkpoint()` 只查 `/share_data/2b5_saved_model_for_xg/saved_model/global_step_0` 并报 `ValueError: ViT model not found`。
