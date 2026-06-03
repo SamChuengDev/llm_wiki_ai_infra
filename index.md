@@ -8,6 +8,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|Bugfix: xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
 - [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|Bugfix: torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
 - [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|Bugfix: VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]
 - [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|Bugfix: xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
@@ -73,6 +74,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - **DeepSpeed**: 加速库适配
 
 ### 5. [[wiki/05_fact/index|事实知识 (Facts)]]
+- [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|Fact: VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|Fact: xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - [[wiki/05_fact/vlm_2b5_vit_llm_deployment_architecture|Fact: VLM 2B5 VIT与LLM的混合部署架构约束]]
 - [[wiki/05_fact/vlm_2b5_inference_service_golden_config|VLM 2B5 推理服务化部署黄金配置 (DP16/EP16)]]
@@ -104,6 +106,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-03]` 排错: [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
+- `[2026-06-03]` 事实: [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - `[2026-06-03]` 性能调优: [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
 - `[2026-06-02]` 精度对齐: [[wiki/02_precision/vlm_torch_infer_frozen_vlm_weight_sync_reward|torch infer frozen VLM 权重未同步导致 reward 低于合并前]]
 - `[2026-06-02]` 排错: [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]

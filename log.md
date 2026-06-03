@@ -1,3 +1,15 @@
+## [2026-06-03] ingest-bugfix | xpu-gpt 2B5 VLM 双节点 A3 rollout 适配
+- **来源**: 双节点 2450 + 26100 验证会话，失败日志 `outputs/logs/vlm_0603_115505_2614_xg_graph_perfopt_bs128.log`，bsz=128 验证日志 `outputs/logs/vlm_0603_130806_xg_2nodes_2b5_bs128.log`，bsz=256 验证日志 `outputs/logs/vlm_0603_153936_xg_2nodes_2b5_bsz256_bs256.log`。
+- **提取点 1**: 双节点初始失败包含 Ray 版本不一致以及 `assert replicas_per_node != 0`；后者与 `ray.nodes()` 中 `Alive=False` / 无 NPU 资源的残留节点相关，训练资源池和 rollout replica 枚举必须过滤 non-alive / no-device nodes。
+- **提取点 2**: 多节点 xLLM rollout replica 需要使用 Ray node 本机 IP 作为 rendezvous 地址；修复后日志显示 head replica 使用 `10.101.24.50`，worker replica 使用 `10.101.26.100`，不再依赖单独 runtime env 开关。
+- **提取点 3**: 统一 `runtime_env_xg.yaml` 后，bsz=256 已验证到 `global_step=4`，reward 非全零，`logprobs_diff` 为 `0.0388/0.0287/0.0296/0.0293`，fatal 扫描未命中 Traceback/OOM/RPC；该结论不替代 70+ / 200 step 长线漂移验证。
+
+## [2026-06-03] ingest-fact | VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态
+- **来源**: 双节点 2450 + 26100 验证会话，配置 `run_xg_vlm_2b5.sh` / `runtime_env_xg_32rank.yaml` / `ray_xg_32rank.sh`，代码公式 `maas_finetune/trainer/rl/dist_utils.py` 与 `maas_finetune/trainer/rl/rollout/ray_driver.py`，验证日志 `outputs/logs/vlm_0603_130806_xg_2nodes_2b5_bs128.log`。
+- **提取点 1**: Rollout 口径为 `rollout.tp_size=1`、`rollout.ep_size=16`，每个 xLLM rollout replica 占 16 NPU；双节点各 16 NPU 时形成 2 个本地 16-rank replica，即 rollout 层面 DP=2，每节点 1 个副本。
+- **提取点 2**: Actor 口径为 `actor.fsdp_size=-1`、`actor.ep_size=2`、`actor.sp_size=4`；32rank 下 `fsdp_size=-1` 使模型副本维度 `dp_replicate_size=1`，但数据 dispatch 维度为 `world_size / sp_size = 8`，不能把 actor 的数据 DP 误解为 1。
+- **提取点 3**: `MAAS_XG_ROLLOUT_USE_NODE_IP=1` 是多节点 rollout 的 rendezvous 地址修正开关，不直接决定 DP 数；扩到更多节点时仍需保留，但 3/4 节点以上规模需要对应实测确认。
+
 ## [2026-06-03] lint | health check
 - **扫描**: 55 个 Markdown 文件（根 `index.md`、`log.md` 与 `wiki/**/*.md` 页面），并确认旧根目录 `00_bugfix/` 已不存在，唯一 Bugfix 目录为 `wiki/00_bugfix/`。
 - **发现**: 18 个断链、0 个孤立页面、2 个根文件 frontmatter 缺失提示、0 个 `status: active` 超 90 天页面、未发现明确矛盾标记；另有 41 个非强制反链候选。
