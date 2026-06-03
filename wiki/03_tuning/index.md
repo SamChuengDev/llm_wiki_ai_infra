@@ -1,7 +1,7 @@
 ---
 title: "性能调优 (Tuning)"
 tags: [category/tuning]
-last_updated: 2026-05-27
+last_updated: 2026-06-03
 source: []
 confidence: high
 status: active
@@ -15,4 +15,5 @@ open_questions: []
 ## 📖 核心文档
 - [ ] [[hccl_optimization|HCCL 通信优化]]
 - [ ] [[memory_management|显存复用策略]]
+- [ ] [[xpu_gpt_w8a8_rl_scheduler_memory_tuning|Tuning: xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
 - [ ] [[ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]

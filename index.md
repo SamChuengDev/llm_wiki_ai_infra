@@ -9,6 +9,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
 - [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|Bugfix: torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
+- [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|Bugfix: VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]
 - [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|Bugfix: xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
 - [[wiki/00_bugfix/vlm_rl_xg_hash_image_size_check|Bugfix: VLM 2B5 xg RL hash 路径未关闭 xLLM 图片尺寸检查导致 InvalidImageURL]]
 - [[wiki/00_bugfix/vlm_2b5_vit_checkpoint_fallback|Bugfix: M8 2B5 VLM Companion ViT 权重路径 fallback 缺失导致启动失败]]
@@ -44,6 +45,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/rl_debug_tools_guide|NPU 框架级调试工具与探针指南 (Tools)]]
 
 **🐛 实战排查案例 (Case Studies)**
+- [[wiki/02_precision/vlm_torch_infer_frozen_vlm_weight_sync_reward|torch infer frozen VLM 权重未同步导致 reward 低于合并前]]
 - [[wiki/02_precision/tokenizer_config_mismatch|tokenizer_config 未对齐导致 response 异常]]
 - [[wiki/02_precision/rmsnorm_eps_mismatch_reward|RMSNorm 超参 eps 未对齐导致 reward 下降]]
 - [[wiki/02_precision/verl_randomness_fixing|Ray 多进程下 VeRL 确定性无法透传问题]]
@@ -58,6 +60,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散 (400x vs 20x)]]
 - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 ### 3. [[wiki/03_tuning/index|性能调优 (Tuning)]]
+- [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|Tuning: xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
 - [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
 - HCCL 并发与通信优化
 - 显存复用与 OOM 解决
@@ -70,6 +73,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - **DeepSpeed**: 加速库适配
 
 ### 5. [[wiki/05_fact/index|事实知识 (Facts)]]
+- [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|Fact: xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - [[wiki/05_fact/vlm_2b5_vit_llm_deployment_architecture|Fact: VLM 2B5 VIT与LLM的混合部署架构约束]]
 - [[wiki/05_fact/vlm_2b5_inference_service_golden_config|VLM 2B5 推理服务化部署黄金配置 (DP16/EP16)]]
 - [[wiki/05_fact/vlm_2b5_rl_rollout_quantization|VLM 2.5B RL 训推转换低精度 Rollout 量化实现 (D_W8A8C8)]]
@@ -100,6 +104,10 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-03]` 性能调优: [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
+- `[2026-06-02]` 精度对齐: [[wiki/02_precision/vlm_torch_infer_frozen_vlm_weight_sync_reward|torch infer frozen VLM 权重未同步导致 reward 低于合并前]]
+- `[2026-06-02]` 排错: [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]
+- `[2026-06-02]` 事实: [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - `[2026-06-02]` 排错: [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
 - `[2026-06-01]` 排错: [[wiki/00_bugfix/vlm_rl_xg_hash_image_size_check|VLM 2B5 xg RL hash 路径未关闭 xLLM 图片尺寸检查导致 InvalidImageURL]]
 - `[2026-06-01]` 排错: [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]

@@ -1,3 +1,34 @@
+## [2026-06-03] lint | health check
+- **扫描**: 55 个 Markdown 文件（根 `index.md`、`log.md` 与 `wiki/**/*.md` 页面）。
+- **发现**: 初扫发现 22 个断链、0 个孤立页面、2 个根文件 frontmatter 缺失提示、0 个 `status: active` 超 90 天页面、未发现明确矛盾标记；复扫后剩余 18 个断链与 41 个非强制反链候选。
+- **自动修复**: 将旧目录已有内容补齐为正式 wiki 页面 `wiki/00_bugfix/encoder_cache_eviction_assertion.md` 与 `wiki/00_bugfix/npu_empty_virt_addr_cache_oom.md`，并接入 `wiki/00_bugfix/index.md`；断链从 22 降至 18。
+- **待人工处理**: 剩余断链多为规划/占位概念或需要单独成文的主题，包括 `vllm_npu`、`hccl_optimization`、`memory_management`、`overflow_handling`、`mapping_table`、`xllm_engine_scheduling` 等；反链候选多为“关联知识”的弱关联，未批量自动补齐。
+
+## [2026-06-03] ingest-tuning | xpu-gpt W8A8 RL scheduler batch 与显存水位调优
+- **来源**: 调整前日志 `outputs/logs/vlm_0602_165949_2614_xg_graph_bs128.log` / `_filter.log`，调整后日志 `outputs/logs/vlm_0602_210957_2614_xg_graph_perfopt_bs128.log` / `_filter.log`。
+- **提取点 1**: 配置差异为 `gpu_memory_utilization=0.7 -> 0.85`，`scheduler_max_schedule_batch_size=512 -> 768`，`scheduler_max_schedule_context_batch_size=512 -> 768`，`model_max_batch_size=512 -> 768`；`inferencer_async_runtime_chunk_size=10240` 未变化。
+- **提取点 2**: 同口径统计 step 3-5 与 11-15 共 8 个 step，端到端 `train/timing/step` 从 `427.329s` 降到 `422.394s`，提升约 `1.15%`；rollout 从 `203.945s` 降到 `198.072s`，提升约 `2.88%`。
+- **提取点 3**: 主要收益来自 rollout 与 `sync_weight` 小幅下降，`update_actor`、`collect_quant_amax` 略变慢。该优化可作为小幅正收益配置记录，但 768/0.85 不是已证明最优值，仍需长线 OOM 与吞吐稳定性观察。
+
+## [2026-06-02] ingest-precision | torch infer frozen VLM 权重未同步导致 reward 低于合并前
+- **来源**: 合并前 torch infer 日志 `/Users/bytedance/posttrain/codes/maas_engine_torch_infer/outputs/logs/vlm_0528_002344.log`，合并后坏日志 `outputs/logs/vlm_0601_213829_24189_torchinfer_align_ypq_bs128_filter.log`，修复验证日志 `outputs/logs/vlm_0602_113333_24189_torchinfer_align_ypq_bs128.log`。
+- **提取点 1**: 合并后 reward mean 明显低于合并前，但 `logprobs_diff` 仍在 `~0.016-0.018`，说明 actor/rollout 概率对齐健康，问题更可能在共同使用的视觉 embedding 质量上。
+- **提取点 2**: 同一 image hash 的 VLM embedding 从合并前 mean `0.006879` 变为坏 run mean `-40.2794`；坏日志缺少 `vision_encoder` / `multi_modal_projector` 的 SHM 同步行，torch infer DirectEngine 初始化 mock weights 后未收到真实 frozen VLM 权重。
+- **提取点 3**: 修复为 `XLLM_MODEL_CLS=torch` 时不跳过 `vision_encoder.`、`ln_vision.`、`multi_modal_projector.` 权重同步；`xpu` 或未设置时继续跳过，保持 xpu_gpt/Companion 路径不变。验证到 step14，ViT-Probe mean 恢复到 `~0.005-0.008`，`logprobs_diff~0.016`，但仍需 70+ / 200 step 长线验证。
+
+## [2026-06-02] ingest-bugfix | VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码
+- **来源**: 提交 `58187c25f99f83db9f212e79538ee928c7a47c86`，xg 验证日志 `outputs/logs/vlm_0601_165516_2450_after_merge_bs128_filter.log`，torch inference 验证日志 `outputs/logs/vlm_0601_213829_24189_torchinfer_align_ypq_bs128_filter.log`。
+- **提取点 1**: 旧模板在样本已有 rollout `vit_embeds` 时仍逐图调用 `_encode_image()`，最后再把 `vit_embeds` 塞回输出，造成 Actor/ref 侧重复图片编码与像素输入/embedding 语义混用风险。
+- **提取点 2**: 修复为有 `vit_embeds` 时跳过 `_encode_image()`，用 `input_ids` 中 image token 数作为 `total_image_tokens`，并新增 `vit_embeds.shape[0] == image_token_count` 校验；无 `vit_embeds` 时保留原图片编码路径。
+- **提取点 3**: xg 后端日志已到 120 step，尾部 `logprobs_diff` 约 `0.0236~0.0259`；torch inference 后端日志已到 62 step，尾部 `logprobs_diff` 约 `0.0171~0.0182`；两份日志均未见 Traceback 或新增 token mismatch discard。该结论不替代 200 step 长线精度漂移验证。
+
+## [2026-06-02] ingest-fact | xpu_gpt + torch inference 合并后 xg 回归对比结论
+- **来源**: 合并前完整日志 `24167:/data01/zcs/maas_engine_vlm2b5/outputs/logs/vlm_0525_220913_24167_thnk_parser_enabled_fix_prefix_cache_bs128.log`，合并后完整日志 `outputs/logs/vlm_0601_165516_2450_after_merge_bs128.log`，两侧 filter/metric 日志与 runtime env。
+- **提取点 1**: 完整日志 Hydra dict 结构化 diff 只有 `trainer.trajectory_logger.stream` 时间戳不同；Data、Actor、Ref、Rollout、trainer 主配置一致，包括 `data.batch_size=128`、`rollout.generation.n=8`、`rollout.model.path=/share_data/2b5_saved_model_for_xg/`、`thinking_parser.enabled=True`。
+- **提取点 2**: LLM target 路径文本从 `saved_model/global_step_0/model.safetensors` 变为 `saved_model/W8A8/model.safetensors`，但二者解析到同一 W8A8 权重且 `cmp_llm_exit=0`；Companion ViT 路径文本不同但 `cmp_vit_exit=0`，不能把权重不同作为已证实差异原因。
+- **提取点 3**: 环境变量存在真实差异：`CPU_AFFINITY_CONF=2 -> 1,npu_affine:1`、host 地址变化、0525 额外 logprobs debug 与 draft/spec 文本变量；投机推理未实锤生效，不能用 draft/eagle 文本字段解释精度差异。指标上 126 step 对齐显示 `logprobs_diff` 后者平均高约 `+0.00134`，step time 后者平均低约 `63s`，但这不是 200 step 长线精度结论。
+- **提取点 4**: 性能上合并后单个 RL step 平均减少约 `50~60s`，126 step 对齐均值为 `-63.1755s`；主要分项包括 `sync_weight` 约 `-31s`、`update_actor` 约 `-27s`、`offload_weights/data` 小幅下降。`CPU_AFFINITY_CONF` 的绑核变化是候选解释，但由于日志提示 `npu_affine` 不被支持并被禁用，仍需单独 A/B 才能定量归因。
+
 ## [2026-06-02] ingest-bugfix | torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化
 - **来源**: merge 慢日志 `outputs/logs/vlm_0601_205541_24189_torchinfer_align_ypq_bs128.log`，源目录健康对照 `/Users/bytedance/posttrain/codes/maas_engine_torch_infer/outputs/logs/vlm_0528_002344.log`，修复文件 `maas_finetune/trainer/rl/rollout/ray_driver.py`。
 - **提取点 1**: 失败签名不是 Traceback，而是 `train/timing/data=966.465s`、step `1131.7309s`；Hydra 配置为 `scheduler/model batch=512`，但 xLLM 实际启动为 `max_schedule_batch_size=64` 与 `model max_batch=64`。
