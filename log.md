@@ -1,4 +1,10 @@
 ## [2026-06-03] lint | health check
+- **扫描**: 55 个 Markdown 文件（根 `index.md`、`log.md` 与 `wiki/**/*.md` 页面），并确认旧根目录 `00_bugfix/` 已不存在，唯一 Bugfix 目录为 `wiki/00_bugfix/`。
+- **发现**: 18 个断链、0 个孤立页面、2 个根文件 frontmatter 缺失提示、0 个 `status: active` 超 90 天页面、未发现明确矛盾标记；另有 41 个非强制反链候选。
+- **自动修复**: 本轮未做新的自动修复；剩余断链均是占位/规划概念或需要单独成文的主题，不适合猜测补页。
+- **待人工处理**: 建议后续按优先级补齐 `vllm_npu`、`hccl_optimization`、`memory_management`、`overflow_handling`、`mapping_table`、`xllm_engine_scheduling` 等缺页；是否给根 `index.md` / `log.md` 增加 YAML frontmatter 需要先统一 wiki 约定。
+
+## [2026-06-03] lint | health check
 - **扫描**: 55 个 Markdown 文件（根 `index.md`、`log.md` 与 `wiki/**/*.md` 页面）。
 - **发现**: 初扫发现 22 个断链、0 个孤立页面、2 个根文件 frontmatter 缺失提示、0 个 `status: active` 超 90 天页面、未发现明确矛盾标记；复扫后剩余 18 个断链与 41 个非强制反链候选。
 - **自动修复**: 将旧目录已有内容补齐为正式 wiki 页面 `wiki/00_bugfix/encoder_cache_eviction_assertion.md` 与 `wiki/00_bugfix/npu_empty_virt_addr_cache_oom.md`，并接入 `wiki/00_bugfix/index.md`；断链从 22 降至 18。

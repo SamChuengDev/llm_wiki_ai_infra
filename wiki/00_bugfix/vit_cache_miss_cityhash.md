@@ -1,51 +1,51 @@
 ---
-title: "Bugfix: VLM ViT 缓存穿透与 CityHash 跨端不对齐导致的 100% Cache Miss"
-tags: [status/resolved, priority/high, category/cache]
-last_updated: 2026-05-18
-source: [outputs/logs/vlm_0518_223521_2450_verify_cache_miss_magnitude_bs2.log]
+title: "Bugfix: ViT Cache 100% Miss & Race Condition Mismatch"
+tags: [status/resolved, priority/critical, category/caching]
+last_updated: 2026-05-19
+source: [outputs/logs/vlm_0518_223521_2450_verify_cache_miss_magnitude_bs2.log, outputs/logs/vlm_0519_092103_2450_verify_cache_miss_magnitude_bs128.log]
 confidence: high
 status: resolved
-open_questions: []
+open_questions:
+  - "是否还需要保留基于 MD5 的 soft-hash fallback 作为兜底？当前直接采用 VlmDialogProcessor 的严格一致性 Hash 理论上已无需 soft-hash。"
 contradictions: []
 ---
 
-# Bugfix Report: VLM ViT 缓存穿透与 CityHash 跨端不对齐导致的 100% Cache Miss
+# Bugfix Report: ViT Cache 100% Miss & Race Condition Mismatch
 
 ## 1. 现象描述 (Symptoms)
-- **环境**: NPU 910B, W8A8 RL 训练
-- **报错信息**: 
-  - Actor 侧持续抛出 `[ViT-Cache-ACTOR-MISS]` 日志，显示 `vit_cache` 100% 缓存未命中。
-  - Rollout 侧写入的 cache hash（如 `1918643488377266023`，19位数）与 Actor 侧查找的 hash（如 `224859422057812115197456843597838152606`，39位数）存在明显的位数与格式差异。
-  - 缓存穿透不仅导致了巨大的冗余计算开销，多进程的重算耗时差异还偶发导致 FSDP `AllGather` 超时死锁，且强行通过 Tensor soft hash 兜底时会引入 `1 ULP` 的精度底噪漂移。
-- **复现脚本**: `bash ray.sh` (使用 `seed_vl_prompt`)
+- **环境**: xLLM Rollout 引擎 (`VlmDialogProcessor`) + PPO Actor (`template.py`) 双端训练环境，启用 `ENABLE_VIT_CACHE=1`。
+- **报错信息**:
+  在日志中出现大面积甚至 100% ViT Cache Miss：
+  ```text
+  [ViT-Cache-ACTOR-MISS] rank=4 img_idx=5/29 hash=-1137098652142668159 file_exists=False
+  ```
+  尽管 Rollout 端已经处理相同图像并写入缓存，Actor 仍无法命中。早期日志还显示 Rollout 侧 hash 形如 19 位 `CityHash64`，Actor 侧 hash 形如 39 位 `CityHash128`，存在明显位数与格式差异。
 
 ## 2. 根本原因分析 (Root Cause)
-问题源于 **跨进程哈希算法不匹配 (Cross-Process Hash Algorithm Mismatch)**：
-- **Rollout 侧 (xLLM Engine)**: 图像处理使用 `vlm_dialog_processor`，其内部 `_calculate_image_hash` 使用 `CityHash64` 算法计算原始字节和元数据的哈希，产出 19 位整数。
-- **Actor 侧 (RLTemplate)**: 图像处理使用 `seed_vl_prompt` processor，其默认的哈希生成使用了标准的 `CityHash128`，产出了 39 位整数。
-- 两端对于同一张原始图像字节产生了不同的哈希键值，导致跨进程共享内存 `/dev/shm/vit_cache` 永远无法命中。
+引发该问题的根本原因是双端 Hash 算法及其依赖的动态参数不一致，具体分为两个递进阶段：
+
+1. **Hash 算法基础不一致**：
+   Actor 的 `seed_vl_prompt` 默认使用 `CityHash128`，而 Rollout 端的 `vlm_dialog_processor` 使用 `CityHash64`，并附带特定 `resize_ratio` suffix。因此同一张图像在两端生成不同 key，导致 `/dev/shm/vit_cache` 无法命中。
+
+2. **动态参数导致手工仿真失效**：
+   后续尝试在 Actor 中手工复刻 `CityHash64` 时，曾硬编码 `use_anyres=False` 与 `resize_ratio=1.0`。但 `vlm_dialog_processor` 的 `_calculate_image_hash` / `_get_images_from_raw_images` 表明：
+   - `use_anyres` 取决于数据集传入的 `detail` 字段以及 vit-encoder meta 配置。
+   - `resize_ratio` 是动态计算值，例如 `resize_ratio = math.sqrt(image.max_pixels / total_pixels)`。
+   浮点 `resize_ratio` 会通过 `struct.pack("d", resize_ratio)` 进入 hash 输入；硬编码 `1.0` 会与真实 Rollout hash 不一致，造成部分或全部 GLOBAL MISS。
 
 ## 3. 解决方案 (Solution)
-### 临时方案 (Workaround)
-- [x] 在 Actor 侧利用软哈希 (`torch.round(pv * 1e4) / 1e4`) 对预处理后的 `pixel_values` 进行截断取 MD5 来进行次级缓存命中兜底，但预处理底层的浮点指令集差异仍可能引发 `1 ULP` 误差。
-
 ### 终极方案 (Fix)
-在 Actor 侧的 `template.py` 中绕过 `seed_vl_prompt` 默认的哈希结果，采用与 Rollout 侧严格 1:1 对齐的内联代码，重新基于原图 base64 解析出的原始 bytes 算出精确的 `CityHash64`：
-- [x] **统一处理入口**: 保留 `seed_vl_prompt` 作为统一的 tokenization 和 pixel_values 处理路径（不可替换为 `ark_vlm_dialog`，因其 `__init__` 不兼容）。
-- [x] **复刻 Rollout 的哈希生成逻辑**: 手动提取 raw bytes，使用等效于 `vlm_dialog_processor` 的公式：
-  ```python
-  import struct, cityhash
-  _suffix = b"\x00" + struct.pack("d", 1.0)  # use_anyres=False, resize_ratio=1.0
-  _hash_u64 = cityhash.CityHash64(raw_image_bytes + _suffix)
-  raw_image_hash = str(int.from_bytes(_hash_u64.to_bytes(8, "big", signed=False), "big", signed=True))
-  ```
-- [x] **将正确的哈希透传至 batch**: 在 `encode` 函数内返回 `image_raw_hashes`，加入到 `rl_trainer` 的 `non_tensor_batch_keys` 白名单，最终在 `actor.py` 内部经 `_flatten_nested_list` 展平后与切割后的 `pv_list` 一一对应，完成精确缓存查询。
+放弃在 Actor 端人工仿造 Hash。改为在 `template.py` 中直接实例化与 Rollout 端完全相同的 `VlmDialogProcessor`，并仅用它计算和提取 100% 一致的 `CityHash64`：
+
+- [x] 在 `template.py` 的 `_encode_image` 初始化块中，使用当前环境的 `tokenizer` 和 `model_config` 实例化 `VlmDialogProcessor` 为 `self.xllm_processor_hash`。
+- [x] 保留原有 `seed_vl_prompt` 生成 `pixel_values` 的逻辑，确保前向传播输入不变。
+- [x] 调用 `self.xllm_processor_hash.encode([msg])`，直接透传真实框架解析后的 `hash_img_data.image_hashes[0]` 给 Actor 消费。
+- [x] 在 `actor.py` 补充适配逻辑，确保 `image_raw_hashes[i]` 被正确读取并与图片顺序对齐。
 
 ## 4. 验证结果 (Verification)
-执行修改后的代码，无论在 Batch Size 2 还是 128 (并发含多图) 下，均确认：
-1. Actor 端输出: `[ViT-Cache: old_logprobs] GLOBAL HIT — all ranks cached, using BYPASS path.`
-2. Engine 端输出: `[ViT-Cache-XLLM] HIT in vit_cache, skipping ViT forward pass.`
-缓存 100% 精确命中，成功消除了底层浮点 ULP 引入的微小漂移变量，并提升了训练步速与并发稳定性。
+移除人工 hardcode 后，所有 `resize_ratio` 和 `use_anyres` 的不确定性都被 `VlmDialogProcessor` 内聚计算，双端 hash 一致性得到数学层面的保证。
+
+当前日志 `outputs/logs/vlm_0519_092103_2450_verify_cache_miss_magnitude_bs128.log` 已在 `bs=128` 稳态长跑，确认消除 hash 不一致造成的伪 miss。
 
 ## 5. 沉淀与关联
 - 关联知识点: [[wiki/02_precision/rl_off_policy_inconsistency|训推架构 Off-Policy 异构发散诱因与对策]]
