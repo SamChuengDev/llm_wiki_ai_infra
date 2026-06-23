@@ -1,3 +1,69 @@
+## [2026-06-23] ingest-precision | VLM 23B XG logprobs_diff spike replay 定位现场
+- **来源**: step83 replay 日志 `outputs/logs/vlm_0622_124100_replay_step83_xg_23b_replay_step83_ep128_kv64_tok6144_if128_b8_chunk6144_debug_bs64.log`、strict replay 日志 `outputs/logs/vlm_0622_160204_replay_step83_strict_xg_23b_replay_step83_strict_ep128_kv64_tok6144_if128_b8_chunk6144_debug_bs64.log`、guard run 日志 `outputs/logs/vlm_0622_173707_guard_garbled_xg_23b_guard_ep128_kv64_tok6144_if128_b8_chunk6144_dyn32_safe_bs64.log`、full-batch dump `outputs/DEBUG/logprobs_diff_0623_000610_replay_step83_xpusampler_budget/logprobs_diff_step1_top8.pt` 与 `outputs/DEBUG/logprobs_diff_0623_030200_replay_step83_forced17mask/logprobs_diff_step1_top16.pt`。
+- **提取点 1**: replay 能复现 step83 高 diff：普通/strict replay step1 分别为 `logprobs_diff=0.0436147/0.0436931`；guard run step1 仍为 `0.0625356`，step2 回到 `0.0288409`，因此过滤只能作为隔离手段，不能定性为根因修复。
+- **提取点 2**: full-batch dump 中 `token_id=17 && rollout_logprob=0` 对 corr 破坏显著：两轮 dump 去掉该类 token 后 corr 从 `0.752793/0.760122` 回到 `0.96662/0.975799`，但 strict replay 没有 token17 zero，说明这不是唯一来源。
+- **提取点 3**: 当前高疑点是 thinking forced end token / `thinking_budget` fallback 与 rollout logprob 注入不一致；no-budget replay 尚未完成，原因是验证环境 snapshot 只在 head 容器存在且 Ray working_dir/PYTHONPATH 容易混入旧仓路径。
+
+## [2026-06-17] ingest-tuning | VLM 23B XG if144_b12 负收益与 ViT RECOMPUTE
+- **来源**: XG ep128 if144_b12 日志 `outputs/logs/vlm_0617_121607_xg_23b_rollout_ep128_kv64_tok2048_if144_b12_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0617_121607_ep128_if144_b12.jsonl`、torch infer response-level `vit_embeds` 统一方案 `wiki/02_precision/vlm_torch_infer_response_vit_embeds_unified_cache.md`。
+- **提取点 1**: step2 同口径下，`if144_b12` 的 `train/timing/step=1987.91s`，相比 `if144_b8` 的 `1796.14s` 慢 `191.77s / 10.7%`；`train/timing/data=1453.85s`，相比 `1322.53s` 慢 `9.9%`。
+- **提取点 2**: b12 日志在 Actor 侧大量出现 `[ViT-Probe] path=RECOMPUTE`，例如日志 33116 行附近聚合为 `repeated 256x across cluster`；同一日志没有看到 `forwarded final/current vit_embeds`、`VanillaRollout forwarding vit_embeds` 或 `attached response vision_embeddings` 成功信号。
+- **提取点 3**: `/dev/shm/vit_cache` 只能作为节点本地 fallback，不适合作为 8 节点全局 cache。下一组应回到 `if144_b8`，单独验证 `XPU_KV_NUM_BLOCKS=80` 与 `MAAS_VLM_USE_ROLLOUT_VIT_EMBEDS=1` 的 response-level ViT 透传；成功信号是 Actor 侧出现 `path=BYPASS` 且不再大规模 `RECOMPUTE`。
+
+## [2026-06-17] ingest-tuning | VLM 23B XG ep128 if160_b8 持平/负收益
+- **来源**: XG ep128 if160_b8 日志 `outputs/logs/vlm_0617_095100_xg_23b_rollout_ep128_kv64_tok2048_if160_b8_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0617_095100_ep128_if160_b8.jsonl`。
+- **提取点 1**: step2 同口径下，`if160_b8` 的 `train/timing/step=1790.48s`，相比 `if144_b8` 的 `1796.14s` 仅快 `5.66s / 0.3%`，不构成有效性能收益。
+- **提取点 2**: `if160_b8` 的 `speed_tokens=595.94` 低于 `if144_b8` 的 `603.30`，`logprobs_diff=0.0617` 明显劣于 `if144_b8` 的 `0.0300`。
+- **提取点 3**: 完整 run HBM 峰值仍为 `65471 MB`，接近卡上限；当前最优候选保持 `ep128 + if144 + kv64 + ctx8/b8/model8`，下一组优先在 `if144` 上小步试 `scheduler/model/context batch=12`，不要继续单独加 in-flight。
+
+## [2026-06-17] ingest-tuning | VLM 23B XG ep128 if144_b8 正收益
+- **来源**: XG ep128 if144_b8 日志 `outputs/logs/vlm_0617_073951_xg_23b_rollout_ep128_kv64_tok2048_if144_b8_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0617_073951_ep128_if144_b8.jsonl`。
+- **提取点 1**: step2 同口径下，`if144_b8` 的 `train/timing/step=1796.14s`，相比历史 `if128_b8` 的 `1974.33s` 快 `178.19s / 9.0%`；`train/timing/data=1322.53s`，相比 `1488.46s` 快 `11.1%`。
+- **提取点 2**: `if144_b8` 的 `speed_samples=0.2851`、`speed_tokens=603.30`，均高于 `if128_b8` 的 `0.2593`、`548.72`；response length 与 num_tokens 基本持平，说明收益主要来自 rollout/data 阶段。
+- **提取点 3**: 完整 run HBM 峰值仍为 `65496 MB`，与 if128 基本持平；当前最优候选更新为 `ep128 + if144 + kv64 + ctx8/b8/model8`，下一组只小步验证 `MAAS_ROLLOUT_MAX_INFLIGHT_REQUESTS=160`，不直接增加 KV blocks。
+
+## [2026-06-17] ingest-tuning | VLM 23B XG ep128 if96_b8 负收益
+- **来源**: XG ep128 if96_b8 日志 `outputs/logs/vlm_0617_015800_xg_23b_rollout_ep128_kv64_tok2048_if96_b8_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0617_015800_ep128_if96_b8.jsonl`。
+- **提取点 1**: step2 同口径下，`if96_b8` 的 `train/timing/step=2279.70s`，相比历史 `if128_b8` 的 `1974.33s` 慢 `305.37s / 15.5%`；`train/timing/data=1801.77s`，相比 `1488.46s` 慢 `21.0%`。
+- **提取点 2**: `if96_b8` 的 `speed_samples=0.2246`、`speed_tokens=482.26`，均明显低于 `if128_b8` 的 `0.2593`、`548.72`；response length 只长约 `1.9%`，不能解释主要退化。
+- **提取点 3**: 完整 run HBM 峰值仍为 `65501 MB`，降低 in-flight 没有释放峰值窗口；当前最优候选仍应回到 `ep128 + if128 + kv64 + ctx8/b8/model8`，不要在无 OOM 余量证据时增加 `XPU_KV_NUM_BLOCKS`。
+
+## [2026-06-17] ingest-tuning | VLM 23B XG ep128 ctx16_b8 持平/负收益
+- **来源**: XG ep128 ctx16_b8 日志 `outputs/logs/vlm_0616_234100_xg_23b_rollout_ep128_kv64_tok2048_if128_ctx16_b8_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0616_234100_ep128_ctx16_b8.jsonl`。
+- **提取点 1**: step2 同口径下，`ctx16_b8` 的 `train/timing/step=1979.38s`，相比历史 `ctx8_b8` 的 `1974.33s` 略慢 `0.3%`；`train/timing/data=1499.35s`，相比 `1488.46s` 慢 `0.7%`。
+- **提取点 2**: `ctx16_b8` 的 `speed_samples=0.2587`、`speed_tokens=546.59`，均略低于 `ctx8_b8` 的 `0.2593`、`548.72`；response length 与 num_tokens 基本持平，不能解释为样本分布收益。
+- **提取点 3**: step2 HBM 时间窗峰值为 `62860 MB`，但 full run 仍出现 `65499 MB` 峰值；单独增大 context batch 没有性能收益，下一轮应回退 `ctx8/b8/model8`，单独验证 `MAAS_ROLLOUT_MAX_INFLIGHT_REQUESTS=96` 是否缓解 decode 长尾和 HBM 峰值。
+
+## [2026-06-16] ingest-tuning | VLM 23B XG ep128 b8/b16 调参对比
+- **来源**: XG ep128 b8 日志 `outputs/logs/vlm_0616_191446_xg_23b_rollout_ep128_kv64_tok2048_if128_b8_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0616_191446_ep128_sync0_hccl300.jsonl`、XG ep128 b16 日志 `outputs/logs/vlm_0616_210520_xg_23b_rollout_ep128_kv64_tok2048_if128_b16_kvprobe_hccl400c1024_200step_bs64.log`、HBM 监控 `outputs/DEBUG/hbm_8node_0616_210507.jsonl`。
+- **提取点 1**: step2 同口径下，`scheduler/model batch=8` 的 `train/timing/step=1974.33s`，而 `batch=16` 为 `2074.29s`，慢 `99.96s / 5.1%`；`train/timing/data` 从 `1488.46s` 变为 `1586.49s`，几乎解释全部回退。
+- **提取点 2**: b16 的 `speed_samples=0.2468`、`speed_tokens=527.69`，低于 b8 的 `0.2593`、`548.72`；response length 只长约 `1.4%`，不能解释 5% 的 step 回退。
+- **提取点 3**: 两轮 HBM 完整 step 峰值都接近 `65536 MB`，不能用 rollout 稳态低水位判断可无风险继续加 KV 或 decode batch。下一轮应回退 `model_max_batch_size=8`，拆开验证 context/prefill batch，而不是继续整体放大 b16。
+
+## [2026-06-16] ingest-tuning | VLM 23B RL torch infer 与 XG 推理后端性能对比
+- **来源**: torch infer 启动脚本 `run_torch_infer_vlm_23b.sh`、XG 启动脚本 `run_xg_vlm_23b.sh`、torch infer 日志 `outputs/logs/vlm_0606_070312_torch_infer_23b_full_8nodes_vit_responsefallback_bs256_long_bs256_57steps.log`、XG 日志 `outputs/logs/vlm_0616_065614_xg_23b_rollout_ep64_kv64_tok2048_hccl400c1024_200step_bs64.log` 及同时间戳 runtime env。
+- **提取点 1**: torch infer 0606 历史 run 的实跑口径是 `data.batch_size=256`、`rollout.generation.n=8`、`train/batch_size=2048`、`rollout.tp_size=8/dp_size=2`、`enable_async=True`、`scheduler/model batch=512`、chunk `10240`；当前脚本默认已是 `384/8192`，不能用当前脚本默认值倒推该历史日志。
+- **提取点 2**: XG 0616 当前实跑口径是 `data.batch_size=64`、`rollout.generation.n=8`、`train/batch_size=512`、`rollout.ep_size=64`、`scheduler/model batch=8`、chunk `2048`、`XPU_KV_NUM_BLOCKS=64`、W8A8；前 3 step 平均 `train/timing/step=2611.06s`、`speed_samples=0.1984`，显著慢于 torch infer 57 step 平均 `1902.80s`、`1.0773`。
+- **提取点 3**: XG 关键瓶颈是 rollout 有效并发只有 64（512 总请求中 448 pending，每个 client 8 running）、scheduler/model batch 只有 8、`sync_weight` 平均 169.69s、`collect_quant_amax` 平均 16.85s、以及低 HBM 工作区 empty_cache 信号；torch infer 完成 57 step 后在 step58 前后因 torch_npu stream timeout/raylet dead 终止，不能称为长跑稳定通过。
+
+## [2026-06-06] lint | health check
+- **扫描**: 59 个 Markdown 文件（根 `index.md`、`log.md` 与 `wiki/**/*.md` 页面）。
+- **发现**: 18 个断链、0 个孤立页面、2 个根文件 frontmatter 缺失提示、0 个 `status: active` 超 90 天页面；未发现本轮新增 precision 页面引入的新断链。
+- **自动修复**: 追加本次 lint 日志；未创建占位页面，避免把规划主题误写成事实页面。
+- **待人工处理**: 剩余断链仍主要是规划/占位概念或待独立成文主题，包括 `vllm_npu`、`mapping_table`、`custom_operators`、`overflow_handling`、`alignment_tools`、`hccl_optimization`、`memory_management`、`megatron_npu`、`xllm_engine_scheduling` 等；根 `index.md` / `log.md` 是否补 frontmatter 需先统一 wiki 约定。
+
+## [2026-06-06] ingest-precision | torch infer VLM rollout response 直传 vit_embeds 统一 ViT cache 方案
+- **来源**: 当前 23B full 8 节点 response fallback 验证日志 `outputs/logs/vlm_0606_070312_torch_infer_23b_full_8nodes_vit_responsefallback_bs256_long_bs256.log`，2B5 单节点长跑日志 `outputs/logs/vlm_0602_113333_24189_torchinfer_align_ypq_bs128.log`，以及 torch infer / RL 侧 ViT cache 相关代码。
+- **提取点 1**: 当前存在三层 ViT cache/复用机制：xLLM torch infer 内部 `LRUDict` vision cache、RL 侧 `/dev/shm/vit_cache` 文件 cache、以及 rollout final response 直传 `vit_embeds`。其中 `/dev/shm` 适合单节点本地共享，不适合作为多节点全局 cache。
+- **提取点 2**: 单机/多机推荐统一到 `MAAS_VLM_USE_ROLLOUT_VIT_EMBEDS=1` 的 response-level `vit_embeds` 直传，让 embedding 跟随 sample 数据流进入 Actor/ref；`/dev/shm/vit_cache` 仅保留为 `MAAS_VLM_USE_ROLLOUT_VIT_EMBEDS=0 && ENABLE_VIT_CACHE=1` 的旧 fallback。
+- **提取点 3**: 23B full bsz=256 早期 step1-7 的 `logprobs_diff` 稳定在 `0.0171~0.0176`，且 `forwarded final response vit_embeds` 与 `attached response vision_embeddings` 均无 missing/token mismatch；该证据不能替代 70+ / 200 step 长线漂移验证。xpu-gpt + Companion ViT 路径尚未适配 response-level attach，不应强行统一。
+
+## [2026-06-04] ingest-fact | NPU HBM 虚拟显存 expandable_segments 特性
+- **来源**: 用户会话说明，当前仓 `runtime_env_xg.yaml` / `run_xg_vlm_2b5.sh` / `run_xg_vlm_2b5_before_merge.sh`，以及 23B torch inference baseline 日志 `outputs/precision_cmp/torch_infer_23b_128p_baseline_0510_212035.log`。
+- **提取点 1**: `PYTORCH_NPU_ALLOC_CONF=expandable_segments:True` 是 NPU PyTorch allocator 的虚拟显存 / HBM 管理特性开关，通常可降低 HBM 使用与碎片化压力，缓解 NPU device OOM 风险。
+- **提取点 2**: 该变量属于合并前后实验对齐时需要检查的内存环境配置；若 baseline worker 环境中开启，合并后 23B torch inference 脚本也应保留开启，除非有实测证据要求关闭。
+- **提取点 3**: 该特性不能替代 `torch.npu.empty_cache()` 对物理 HBM 的释放，也不能单独作为 OOM 修复成功证据；仍需日志和长跑验证闭环。
+
 ## [2026-06-03] ingest-bugfix | xpu-gpt 2B5 VLM 双节点 A3 rollout 适配
 - **来源**: 双节点 2450 + 26100 验证会话，失败日志 `outputs/logs/vlm_0603_115505_2614_xg_graph_perfopt_bs128.log`，bsz=128 验证日志 `outputs/logs/vlm_0603_130806_xg_2nodes_2b5_bs128.log`，bsz=256 验证日志 `outputs/logs/vlm_0603_153936_xg_2nodes_2b5_bsz256_bs256.log`。
 - **提取点 1**: 双节点初始失败包含 Ray 版本不一致以及 `assert replicas_per_node != 0`；后者与 `ray.nodes()` 中 `Alive=False` / 无 NPU 资源的残留节点相关，训练资源池和 rollout replica 枚举必须过滤 non-alive / no-device nodes。

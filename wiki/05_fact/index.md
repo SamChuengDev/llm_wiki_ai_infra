@@ -1,7 +1,7 @@
 ---
 title: "事实分类索引 (Facts)"
 tags: [index, status/active]
-last_updated: 2026-06-03
+last_updated: 2026-06-04
 source: []
 confidence: high
 status: active
@@ -14,6 +14,7 @@ open_questions: []
 
 ## 已归档页面
 
+- [[wiki/05_fact/npu_hbm_expandable_segments|Fact: NPU HBM 虚拟显存 expandable_segments 特性]]
 - [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|Fact: VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|Fact: xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - [[wiki/05_fact/vlm_2b5_vit_llm_deployment_architecture|Fact: VLM 2B5 VIT与LLM的混合部署架构约束]]

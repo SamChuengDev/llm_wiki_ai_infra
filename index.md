@@ -46,6 +46,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/rl_debug_tools_guide|NPU 框架级调试工具与探针指南 (Tools)]]
 
 **🐛 实战排查案例 (Case Studies)**
+- [[wiki/02_precision/vlm_23b_xg_logpdiff_spike_replay_handoff|VLM 23B XG logprobs_diff spike replay 定位现场]]
+- [[wiki/02_precision/vlm_torch_infer_response_vit_embeds_unified_cache|torch infer VLM rollout response 直传 vit_embeds 统一 ViT cache 方案]]
 - [[wiki/02_precision/vlm_torch_infer_frozen_vlm_weight_sync_reward|torch infer frozen VLM 权重未同步导致 reward 低于合并前]]
 - [[wiki/02_precision/tokenizer_config_mismatch|tokenizer_config 未对齐导致 response 异常]]
 - [[wiki/02_precision/rmsnorm_eps_mismatch_reward|RMSNorm 超参 eps 未对齐导致 reward 下降]]
@@ -61,6 +63,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散 (400x vs 20x)]]
 - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 ### 3. [[wiki/03_tuning/index|性能调优 (Tuning)]]
+- [[wiki/03_tuning/vlm_23b_rl_torch_infer_vs_xg_performance|Tuning: VLM 23B RL torch infer 与 XG 推理后端性能对比]]
 - [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|Tuning: xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
 - [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
 - HCCL 并发与通信优化
@@ -74,6 +77,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - **DeepSpeed**: 加速库适配
 
 ### 5. [[wiki/05_fact/index|事实知识 (Facts)]]
+- [[wiki/05_fact/npu_hbm_expandable_segments|Fact: NPU HBM 虚拟显存 expandable_segments 特性]]
 - [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|Fact: VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|Fact: xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - [[wiki/05_fact/vlm_2b5_vit_llm_deployment_architecture|Fact: VLM 2B5 VIT与LLM的混合部署架构约束]]
@@ -106,6 +110,10 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-23]` 精度对齐: [[wiki/02_precision/vlm_23b_xg_logpdiff_spike_replay_handoff|VLM 23B XG logprobs_diff spike replay 定位现场]]
+- `[2026-06-17]` 性能调优: [[wiki/03_tuning/vlm_23b_rl_torch_infer_vs_xg_performance|VLM 23B RL torch infer 与 XG 推理后端性能对比及 ep128 if144_b8/b12、kv80 与 ViT 透传调参经验]]
+- `[2026-06-06]` 精度对齐: [[wiki/02_precision/vlm_torch_infer_response_vit_embeds_unified_cache|torch infer VLM rollout response 直传 vit_embeds 统一 ViT cache 方案]]
+- `[2026-06-04]` 事实: [[wiki/05_fact/npu_hbm_expandable_segments|NPU HBM 虚拟显存 expandable_segments 特性]]
 - `[2026-06-03]` 排错: [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
 - `[2026-06-03]` 事实: [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - `[2026-06-03]` 性能调优: [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
