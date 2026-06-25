@@ -46,6 +46,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/rl_debug_tools_guide|NPU 框架级调试工具与探针指南 (Tools)]]
 
 **🐛 实战排查案例 (Case Studies)**
+- [[wiki/02_precision/vlm_2b5_torch_infer_uniform_logprobs_shared_reload|VLM 2B5 torch infer shared language reload 缺失导致均匀 logprobs]]
+- [[wiki/02_precision/vlm_23b_torch_infer_bf16_logpdiff_8x_boundary|VLM 23B torch infer BF16 纯文本 logprobs_diff 8.x 定界]]
 - [[wiki/02_precision/vlm_23b_xg_logpdiff_spike_replay_handoff|VLM 23B XG logprobs_diff spike replay 定位现场]]
 - [[wiki/02_precision/vlm_torch_infer_response_vit_embeds_unified_cache|torch infer VLM rollout response 直传 vit_embeds 统一 ViT cache 方案]]
 - [[wiki/02_precision/vlm_torch_infer_frozen_vlm_weight_sync_reward|torch infer frozen VLM 权重未同步导致 reward 低于合并前]]
@@ -110,6 +112,8 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-06-25]` 精度对齐: [[wiki/02_precision/vlm_2b5_torch_infer_uniform_logprobs_shared_reload|VLM 2B5 torch infer shared language reload 缺失导致均匀 logprobs]]
+- `[2026-06-24]` 精度对齐: [[wiki/02_precision/vlm_23b_torch_infer_bf16_logpdiff_8x_boundary|VLM 23B torch infer BF16 纯文本 logprobs_diff 8.x 定界与 shared reload 修复]]
 - `[2026-06-23]` 精度对齐: [[wiki/02_precision/vlm_23b_xg_logpdiff_spike_replay_handoff|VLM 23B XG logprobs_diff spike replay 定位现场]]
 - `[2026-06-17]` 性能调优: [[wiki/03_tuning/vlm_23b_rl_torch_infer_vs_xg_performance|VLM 23B RL torch infer 与 XG 推理后端性能对比及 ep128 if144_b8/b12、kv80 与 ViT 透传调参经验]]
 - `[2026-06-06]` 精度对齐: [[wiki/02_precision/vlm_torch_infer_response_vit_embeds_unified_cache|torch infer VLM rollout response 直传 vit_embeds 统一 ViT cache 方案]]

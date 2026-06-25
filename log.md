@@ -1,3 +1,24 @@
+## [2026-06-25] ingest-precision | VLM 2B5 torch infer shared language reload 缺失导致均匀 logprobs
+- **来源**: 上午健康参考 `outputs/logs/vlm_0625_095043_mathverse23b_bf16_skip_langreload_0625_clean18_bs64.log`、下午坏 run `outputs/logs/vlm_0625_145529_24189_torchinfer_bs128.log` / `outputs/logs/vlm_0625_152731_24189_torchinfer_bs128.log`、中间复验 `outputs/logs/vlm_0625_155139_24189_torchinfer_bs128.log`、修复验证 `outputs/logs/vlm_0625_155759_24189_torchinfer_bs128.log`、`3rdparty/xllm/xllm/backend/inferencer/torch/torch_inferencer.py`、`3rdparty/xllm/xllm/backend/inferencer/torch/utils/weight_loader.py`。
+- **提取点 1**: 2B5 bad run step1/step2 分别为 `logprobs_diff=3.99452/4.10988`，`rollout/ppl=152894`，reward 全 0；日志只出现 `_update_weights.before/after_load shared_vision_model`，缺少 `shared_language_model` reload。
+- **提取点 2**: 恢复 shared language reload 后首次复验进入 `_update_weights.before_load shared_language_model`，但暴露同批 `weight_loader.py` 回归：`NameError: name 'expert_tp_size' is not defined`；修复为恢复 `preprocess_mappings(..., expert_tp_size, expert_tp_rank)` 作用域。
+- **提取点 3**: 修复验证 step1 出现 `_update_weights.after_load shared_language_model`，指标恢复为 `logprobs_diff=0.0144124`、`logprobs_corr=0.977934`、`rollout/ppl=1.07827`、`reward.mean=0.166016`。
+- **提取点 4**: 本结论只证明 2B5 torch infer 均匀 logprobs 回归的 early-step 修复；0624 23B 曾有 skip language reload 的相反阶段证据，后续不能把 2B5/23B shared reload 语义互相外推，仍需 step5、70+ / 200 step 长线验证。
+
+## [2026-06-24] ingest-precision | VLM 23B torch infer BF16 shared reload 0.09 logprobs_diff 修复
+- **来源**: 坏 run `outputs/logs/vlm_0624_191357_torch_infer_23b_text_gsm8k_moerestore_0624_precision_bs64.log`、修复验证 run `outputs/logs/vlm_0624_203347_torch_infer_23b_text_gsm8k_skip_langreload_0624_precision_bs64.log`、`3rdparty/xllm/xllm/backend/inferencer/torch/torch_inferencer.py`、`maas_finetune/trainer/rl/rl_trainer.py`。
+- **提取点 1**: shared SeedVL wrapper 的 `load_weights()` 已覆盖 stripped `transformer.*` / `lm_head.*` 到 `language_model.*` 的映射；在 shared VLM 分支后继续对 `self.model` 做 `GPTSeedM8ForCausalLM loaded=905` 二次 reload，会破坏 torch infer MoE/linear layout reload 等价性。
+- **提取点 2**: 删除二次 shared language reload 后，纯文本 GSM8K step1-step3 分别为 `logprobs_diff=0.00976326/0.00969214/0.00986933`，`logprobs_corr≈0.996`，reward 非零；可定性为 0.09/8.x 灾难级偏差的阶段性修复证据。
+- **提取点 3**: 该结论不能替代 70+ / 200 step 长线验证；后续应按 0608 健康基线口径长跑确认无后段漂移。
+- **提取点 4**: `MAAS_DISABLE_CHECKPOINT=1` 原先未覆盖 `_save_checkpoint()` 的 final `triggered_by_last=True`，导致 step3 后写 checkpoint shard 撑满 `/data01`；验证任务需要在 `_save_checkpoint()` 入口短路，默认训练保存语义不变。
+
+## [2026-06-24] ingest-precision | VLM 23B torch infer BF16 纯文本 logprobs_diff 8.x 定界
+- **来源**: 0608 健康基线 `outputs/logs/vlm_0608_162254_torch_infer_23b_full_8nodes_unified_vit_noshm_clean_retry_bs256_bs256.log`、0624 VLM 坏 run `outputs/logs/vlm_0624_143127_torch_infer_23b_full_8nodes_fixsharedload_0624_precision_bs64.log`、0624 纯文本坏 run `outputs/logs/vlm_0624_160814_torch_infer_23b_text_gsm8k_boundary_0624_precision_bs64.log`、阶段性恢复 run `outputs/logs/vlm_0624_173330_torch_infer_23b_text_gsm8k_weightmap_dpreduce_0624_precision_bs64.log`。
+- **提取点 1**: 纯文本 GSM8K step1 同样出现 `logprobs_diff=8.03042`、`actor/ppl=35370`、reward 全 0；VLM 坏 run 为 `logprobs_diff=8.3152`、`actor/ppl=46178.8`，说明本轮 8.x 主因不在 ViT 透传或图片 cache。
+- **提取点 2**: 回收普通 weight mapping 的 TP/EP 切片、恢复 DP/EP all-reduce group、补齐 SeedVL shared language reload 后，纯文本 step1 恢复到 `actor/ppl=1.20906`、`reward.mean=0.732422`，但 `logprobs_diff=0.0973188` 仍远高于 0608 基线 `0.0175404`。
+- **提取点 3**: 后续应继续沿 torch infer BF16 NPU `kernel_backend=xpu` 的 MoE layout / update_weights reload / 通信 group 定界；这里的 `xpu` 是 xLLM torch infer NPU kernel 目录名，不是 xpu_gpt/XG W8A8 rollout。
+- **提取点 4**: 修复目标已明确为纯文本 GSM8K step1 `logprobs_diff<=0.03`、`logprobs_corr>=0.98`、PPL 同量级且 reward 非全零；短稳态需连续 3 个 step 保持 `0.017~0.03`，VLM 回归需 step1-step5 回到 0608 基线量级后再进入 70+ / 200 step 长跑验证。
+
 ## [2026-06-23] ingest-precision | VLM 23B XG logprobs_diff spike replay 定位现场
 - **来源**: step83 replay 日志 `outputs/logs/vlm_0622_124100_replay_step83_xg_23b_replay_step83_ep128_kv64_tok6144_if128_b8_chunk6144_debug_bs64.log`、strict replay 日志 `outputs/logs/vlm_0622_160204_replay_step83_strict_xg_23b_replay_step83_strict_ep128_kv64_tok6144_if128_b8_chunk6144_debug_bs64.log`、guard run 日志 `outputs/logs/vlm_0622_173707_guard_garbled_xg_23b_guard_ep128_kv64_tok6144_if128_b8_chunk6144_dyn32_safe_bs64.log`、full-batch dump `outputs/DEBUG/logprobs_diff_0623_000610_replay_step83_xpusampler_budget/logprobs_diff_step1_top8.pt` 与 `outputs/DEBUG/logprobs_diff_0623_030200_replay_step83_forced17mask/logprobs_diff_step1_top16.pt`。
 - **提取点 1**: replay 能复现 step83 高 diff：普通/strict replay step1 分别为 `logprobs_diff=0.0436147/0.0436931`；guard run step1 仍为 `0.0625356`，step2 回到 `0.0288409`，因此过滤只能作为隔离手段，不能定性为根因修复。
