@@ -8,6 +8,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 ## 🏛️ 知识目录
 
 ### 0. [[wiki/00_bugfix/index|常规排错 (Bugfix)]]
+- [[wiki/00_bugfix/xpu_gpt_tp4_graph_sched16_507011|Bugfix: xpu_gpt TP4 图模式 sched16 并发触发 507011]]
 - [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|Bugfix: xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
 - [[wiki/00_bugfix/vlm_torch_infer_scheduler_batch_env_override|Bugfix: torch infer VLM 默认 env 覆盖 scheduler/model batch 导致 RL step 劣化]]
 - [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|Bugfix: VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]
@@ -112,6 +113,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-07-03]` 排错: [[wiki/00_bugfix/xpu_gpt_tp4_graph_sched16_507011|xpu_gpt TP4 图模式 sched16 并发触发 507011]]
 - `[2026-06-25]` 精度对齐: [[wiki/02_precision/vlm_2b5_torch_infer_uniform_logprobs_shared_reload|VLM 2B5 torch infer shared language reload 缺失导致均匀 logprobs]]
 - `[2026-06-24]` 精度对齐: [[wiki/02_precision/vlm_23b_torch_infer_bf16_logpdiff_8x_boundary|VLM 23B torch infer BF16 纯文本 logprobs_diff 8.x 定界与 shared reload 修复]]
 - `[2026-06-23]` 精度对齐: [[wiki/02_precision/vlm_23b_xg_logpdiff_spike_replay_handoff|VLM 23B XG logprobs_diff spike replay 定位现场]]

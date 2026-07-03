@@ -1,3 +1,9 @@
+## [2026-07-03] ingest-bugfix | xpu_gpt TP4 图模式 sched16 触发 507011
+- **来源**: TP4 sched8 通过日志 `outputs/logs/vlm_0703_115656_tp4_graph_nonv2_sched8_rayxg_long200_bs8.log` 与 runtime env `outputs/run_time_envs/runtime_env_0703_115656.yaml`；sched16 失败日志 `outputs/logs/vlm_0703_130100_tp4_graph_nonv2_sched16_rayxg_100_bs8.log` 与 runtime env `outputs/run_time_envs/runtime_env_0703_130100.yaml`；本地备份提交 `cd13e5f87`、`a8ee61f56`、`2811deb01`。
+- **提取点 1**: TP4 图模式非 V2 attention + sched8 已跑到 `global_step=10`，step2-step10 `logprobs_diff` 位于约 `0.021~0.029`，未命中 Traceback/507011；这证明 TP4 图模式可以在收窄调度并发下稳定推进多步。
+- **提取点 2**: 将 model/prefill/scheduler/context/min prefill batch 放大到 16 后，sched16 run 在 step1 后的下一轮 rollout 触发 `ACL stream synchronize failed, error code:507011`；首个栈在 `sampler.py:_reject_sample_decode_requests` 的 `_rand.to(device)`，后续 gloo/RPC 关闭为级联。
+- **提取点 3**: 当前只能把 sched8 作为已验证 workaround，不能把 507011 定性为 CANN/custom op 根因；后续若要提吞吐，应小步试 sched12 或加 plog/最小重放验证真实 NPU stream 错误点。
+
 ## [2026-06-25] ingest-precision | VLM 2B5 torch infer shared language reload 缺失导致均匀 logprobs
 - **来源**: 上午健康参考 `outputs/logs/vlm_0625_095043_mathverse23b_bf16_skip_langreload_0625_clean18_bs64.log`、下午坏 run `outputs/logs/vlm_0625_145529_24189_torchinfer_bs128.log` / `outputs/logs/vlm_0625_152731_24189_torchinfer_bs128.log`、中间复验 `outputs/logs/vlm_0625_155139_24189_torchinfer_bs128.log`、修复验证 `outputs/logs/vlm_0625_155759_24189_torchinfer_bs128.log`、`3rdparty/xllm/xllm/backend/inferencer/torch/torch_inferencer.py`、`3rdparty/xllm/xllm/backend/inferencer/torch/utils/weight_loader.py`。
 - **提取点 1**: 2B5 bad run step1/step2 分别为 `logprobs_diff=3.99452/4.10988`，`rollout/ppl=152894`，reward 全 0；日志只出现 `_update_weights.before/after_load shared_vision_model`，缺少 `shared_language_model` reload。

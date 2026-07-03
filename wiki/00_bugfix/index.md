@@ -1,7 +1,7 @@
 ---
 title: "常规排错 (Bugfix)"
 tags: [category/bugfix]
-last_updated: 2026-06-03
+last_updated: 2026-07-03
 source: []
 confidence: high
 status: active
@@ -10,12 +10,11 @@ open_questions: []
 
 # 00 常规排错 (Bugfix)
 
-本章节记录日常开发中的非特定领域报错（如环境配置问题、框架启动异常、通用业务代码崩溃）的复盘与防坑指南。
+本章节记录日常开发中的报错、框架启动异常、调度异常、精度链路崩溃和通用业务代码崩溃的复盘与防坑指南。
 
 ## 📖 核心文档
 
-> 暂无已沉淀文档，待 Ingest 时补充。
-
+- [[wiki/00_bugfix/xpu_gpt_tp4_graph_sched16_507011|xpu_gpt TP4 图模式 sched16 并发触发 507011]]
 - [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
 - [[wiki/00_bugfix/xpu_gpt_decode_graph_cache_maxlen_mismatch|xpu_gpt decode graph cache 未按 max_length 隔离导致 12k->32k 图模式断言]]
 - [[wiki/00_bugfix/vlm_template_reuse_rollout_vit_embeds|VLM RL Template 未复用 rollout vit_embeds 导致 Actor 侧重复图片编码]]
