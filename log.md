@@ -1,3 +1,11 @@
+## [2026-11-10] ingest-fact+tuning | Ascend A5 NDA/NDR 设备直驱 RDMA 通信架构与调优
+- **来源**: 华为内部社区 CANN SHMEM NDA 技术系列上下篇笔记（`D:\O1培训材料\ForA5Skill\CANN_SHMEM_NDA_下篇_AIV直驱RDMA_核心要点笔记.md`），已归档至 `raw/docs/CANN_SHMEM_NDA_核心要点笔记.md`（含 `rdma-vs-tcpip-diagram.svg`、`rdma-vs-roce-diagram.svg`）。
+- **提取点 1**: 厘清 NDR（数据直达、Host 组织提交）与 NDA（AIV 在 Kernel 内完成目标选择、WQE 构造、QP 选择、Doorbell 提交与完成管理）的控制路径差异，及与 NVIDIA GPUDirect/GDAKI 的类比关系；沉淀分层架构（Host 控制面 / AIV 数据面 / Backend Lowering）、编程模型四对象与 XSCALE/HNS_1825/IN_DIE 后端能力矩阵（Aggregate 仅 XSCALE+IN_DIE、RDMA Atomic 仅 XSCALE）。
+- **提取点 2**: 归档 RDMA/RoCE 基础事实：零拷贝 + Kernel Bypass 的性能来源（同集群 RoCE ~1–2 μs）、RDMA ≠ 单纯 DMA 的四层硬件依赖、RoCE v2（UDP 4791）依赖无损以太网（PFC/ECN）、QP 独立排序域语义。
+- **提取点 3**: 提炼异步三段式（Issue Early → Compute in Between → Complete on Dependency）、完成语义四原语（Fence/Quiet/Sync/Barrier）与三种提交模式对比（Single-QP/Multi-QP/Aggregate），以及五类瓶颈（Host/Issue/Submission/Bandwidth/Dependency-bound）→ 优化方向映射和渐进式调优路径（先通用 NBI+Quiet，再按 Profiling 逐层引入 QP-specific 与 Aggregate）。
+- **[create]** `wiki/05_fact/ascend_a5_nda_nrd_architecture.md` — NDA/NDR 架构事实（含能力矩阵、三大 AI 场景、端到端六步流程）
+- **[create]** `wiki/03_tuning/ascend_a5_nda_submission_tuning.md` — 提交模式选择与瓶颈调优（含 Profiling 现象速查表）
+
 ## [2026-06-03] ingest-bugfix | xpu-gpt 2B5 VLM 双节点 A3 rollout 适配
 - **来源**: 双节点 2450 + 26100 验证会话，失败日志 `outputs/logs/vlm_0603_115505_2614_xg_graph_perfopt_bs128.log`，bsz=128 验证日志 `outputs/logs/vlm_0603_130806_xg_2nodes_2b5_bs128.log`，bsz=256 验证日志 `outputs/logs/vlm_0603_153936_xg_2nodes_2b5_bsz256_bs256.log`。
 - **提取点 1**: 双节点初始失败包含 Ray 版本不一致以及 `assert replicas_per_node != 0`；后者与 `ray.nodes()` 中 `Alive=False` / 无 NPU 资源的残留节点相关，训练资源池和 rollout replica 枚举必须过滤 non-alive / no-device nodes。

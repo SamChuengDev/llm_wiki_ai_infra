@@ -61,6 +61,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - [[wiki/02_precision/vlm_rl_actor_rope_logprobs_diff|VLM RL 长序列 RoPE 偏移导致 logprobs_diff 发散 (400x vs 20x)]]
 - [[wiki/02_precision/vlm_2b5_logpdiff_drift|VLM 2.5B RL logprobs_diff 长线漂移精度对齐]]
 ### 3. [[wiki/03_tuning/index|性能调优 (Tuning)]]
+- [[wiki/03_tuning/ascend_a5_nda_submission_tuning|Tuning: Ascend A5 NDA 提交模式选择与通信瓶颈调优]]
 - [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|Tuning: xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]
 - [[wiki/03_tuning/ep_zero_sync|Tuning: EP 零冗余权重同步与 Resharding 优化 (ZeroSync)]]
 - HCCL 并发与通信优化
@@ -106,6 +107,7 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 
 ## 🕒 最近更新
 
+- `[2026-11-10]` 事实: [[wiki/05_fact/ascend_a5_nda_nrd_architecture|Ascend A5 NDA/NDR 设备直驱 RDMA 通信架构]]、性能调优: [[wiki/03_tuning/ascend_a5_nda_submission_tuning|NDA 提交模式选择与通信瓶颈调优]]
 - `[2026-06-03]` 排错: [[wiki/00_bugfix/xpu_gpt_vlm_2b5_dual_node_a3_rollout_adaptation|xpu-gpt 2B5 VLM 双节点 A3 rollout 适配]]
 - `[2026-06-03]` 事实: [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - `[2026-06-03]` 性能调优: [[wiki/03_tuning/xpu_gpt_w8a8_rl_scheduler_memory_tuning|xpu-gpt W8A8 RL scheduler batch 与显存水位调优]]

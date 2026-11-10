@@ -1,0 +1,86 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1660" height="680" viewBox="0 0 1660 680" font-family="Microsoft YaHei, PingFang SC, Noto Sans SC, sans-serif">
+  <defs>
+    <marker id="arrB" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="6.5" markerHeight="6.5" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2e86c1"/>
+    </marker>
+  </defs>
+
+  <rect width="1660" height="680" fill="#fafafa"/>
+
+  <text x="830" y="46" text-anchor="middle" font-size="21" font-weight="bold" fill="#2c3e50">RDMA vs RoCE：不是并列，而是「语义」与「承载」的关系</text>
+
+  <!-- RDMA 语义层 -->
+  <rect x="280" y="66" width="1100" height="66" rx="12" fill="#eaf2f8" stroke="#2e86c1" stroke-width="2"/>
+  <text x="830" y="94" text-anchor="middle" font-size="17" font-weight="bold" fill="#1a5276">RDMA 统一语义层 —— 决定「做什么」</text>
+  <text x="830" y="118" text-anchor="middle" font-size="13.5" fill="#1a5276">QP · WQE · Doorbell · CQ / Quiet ｜ 零拷贝 · 绕过内核 · 协议硬件卸载（与底层网络无关）</text>
+
+  <!-- 分发箭头 -->
+  <g stroke="#2e86c1" stroke-width="2" fill="none">
+    <path d="M830,132 L830,146 L310,146 L310,162" marker-end="url(#arrB)"/>
+    <path d="M830,132 L830,162" marker-end="url(#arrB)"/>
+    <path d="M830,132 L830,146 L1350,146 L1350,162" marker-end="url(#arrB)"/>
+  </g>
+
+  <!-- 三种承载 -->
+  <g text-anchor="middle">
+    <rect x="60" y="164" width="500" height="130" rx="12" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.8"/>
+    <text x="310" y="192" font-size="16" font-weight="bold" fill="#34495e">承载 ①：InfiniBand</text>
+    <text x="310" y="216" font-size="13" fill="#2c3e50">专用网卡 + 专用交换机，原生 RDMA 传输层</text>
+    <text x="310" y="238" font-size="13" fill="#2c3e50">需独立组网，成本高</text>
+    <text x="310" y="260" font-size="13" fill="#2c3e50">典型：HPC / 超算</text>
+
+    <rect x="610" y="164" width="440" height="130" rx="12" fill="#eafaf1" stroke="#27ae60" stroke-width="2.5"/>
+    <text x="830" y="192" font-size="16" font-weight="bold" fill="#1e8449">承载 ②：RoCE ★ 本文场景</text>
+    <text x="830" y="216" font-size="13" fill="#145a32">RDMA over Converged Ethernet（标准以太网）</text>
+    <text x="830" y="238" font-size="13" fill="#145a32">v1：二层承载，不跨路由；v2：UDP/IP 承载，可路由（主流）</text>
+    <text x="830" y="260" font-size="13" fill="#145a32">依赖无损以太网：PFC + ECN（DCB）</text>
+    <text x="830" y="282" font-size="13" fill="#145a32">典型：AI 集群 / 数据中心</text>
+
+    <rect x="1100" y="164" width="500" height="130" rx="12" fill="#f4f6f7" stroke="#7f8c8d" stroke-width="1.8"/>
+    <text x="1350" y="192" font-size="16" font-weight="bold" fill="#34495e">承载 ③：iWARP</text>
+    <text x="1350" y="216" font-size="13" fill="#2c3e50">RDMA over TCP</text>
+    <text x="1350" y="238" font-size="13" fill="#2c3e50">兼容现有 TCP 网络，部署门槛低</text>
+    <text x="1350" y="260" font-size="13" fill="#2c3e50">协议处理较重，相对少见</text>
+  </g>
+
+  <!-- 封装对比标题 -->
+  <text x="830" y="338" text-anchor="middle" font-size="16" font-weight="bold" fill="#2c3e50">同一套 RDMA 载荷，三种网络封装（RoCE 之所以能跑在以太网上）</text>
+
+  <!-- 栈 1：InfiniBand -->
+  <g text-anchor="middle" font-size="13.5" font-weight="bold">
+    <rect x="80" y="360" width="440" height="42" rx="8" fill="#d5dbdb" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="300" y="386" fill="#2c3e50">InfiniBand 链路层帧头</text>
+    <rect x="80" y="408" width="440" height="52" rx="8" fill="#d6eaf8" stroke="#2e86c1" stroke-width="1.8"/>
+    <text x="300" y="438" fill="#1a5276">RDMA 载荷（IB 传输层头 + 数据）</text>
+  </g>
+  <text x="300" y="500" text-anchor="middle" font-size="12.5" fill="#566573">独立组网，不依赖 IP 栈</text>
+
+  <!-- 栈 2：RoCE v2 -->
+  <g text-anchor="middle" font-size="13.5" font-weight="bold">
+    <rect x="600" y="360" width="460" height="42" rx="8" fill="#d5dbdb" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="830" y="386" fill="#2c3e50">以太网帧头</text>
+    <rect x="600" y="408" width="460" height="42" rx="8" fill="#eaeded" stroke="#95a5a6" stroke-width="1.5"/>
+    <text x="830" y="434" fill="#2c3e50">IP（v4 / v6）</text>
+    <rect x="600" y="456" width="460" height="42" rx="8" fill="#fdebd0" stroke="#e67e22" stroke-width="1.5"/>
+    <text x="830" y="482" fill="#9c640c">UDP（端口 4791）</text>
+    <rect x="600" y="504" width="460" height="52" rx="8" fill="#d6eaf8" stroke="#2e86c1" stroke-width="1.8"/>
+    <text x="830" y="534" fill="#1a5276">RDMA 载荷（IB 传输层头 + 数据）</text>
+  </g>
+  <text x="830" y="592" text-anchor="middle" font-size="12.5" fill="#566573">v2 可跨三层路由（主流）；v1 = 以太网帧直接承载，仅二层</text>
+
+  <!-- 栈 3：传统 TCP 对照 -->
+  <g text-anchor="middle" font-size="13.5" font-weight="bold">
+    <rect x="1120" y="360" width="440" height="42" rx="8" fill="#d5dbdb" stroke="#7f8c8d" stroke-width="1.5"/>
+    <text x="1340" y="386" fill="#2c3e50">以太网帧头</text>
+    <rect x="1120" y="408" width="440" height="42" rx="8" fill="#eaeded" stroke="#95a5a6" stroke-width="1.5"/>
+    <text x="1340" y="434" fill="#2c3e50">IP</text>
+    <rect x="1120" y="456" width="440" height="42" rx="8" fill="#fdecea" stroke="#e74c3c" stroke-width="1.5"/>
+    <text x="1340" y="482" fill="#922b21">TCP（内核协议栈逐包处理）</text>
+    <rect x="1120" y="504" width="440" height="52" rx="8" fill="#fdecea" stroke="#e74c3c" stroke-width="1.5"/>
+    <text x="1340" y="534" fill="#922b21">应用数据（落内核缓冲，需拷贝）</text>
+  </g>
+  <text x="1340" y="592" text-anchor="middle" font-size="12.5" fill="#566573">对照：协议栈在软件里，数据不直达应用内存</text>
+
+  <!-- 底部结论 -->
+  <text x="830" y="648" text-anchor="middle" font-size="14.5" font-weight="bold" fill="#1e8449">一句话：RDMA 定义「语义与行为」，RoCE / IB / iWARP 定义「跑在哪张网络上」——换承载不换语义；SHMEM NDA 的 aclshmemx_roce_* 即 RoCE v2 路径</text>
+</svg>
