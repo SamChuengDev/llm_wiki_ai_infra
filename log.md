@@ -1,3 +1,24 @@
+## [2026-11-18] ingest-fact | 灵衢 UB 基础规范 2.1 协议要点（950 训练性能优化与调试视角）
+- **来源**: `UB-Base-Specification-2.1.0-zh-clean.pdf`（584 页全量规范，华为 2026-09 发布 2.1 版）；协议官网 https://www.unifiedbus.com/zh。
+- **提取点 1**: 协议全栈分层要点（物理层 FEC/降速降lane、链路层信用流控/VL/GoBackN、网络层多路径/FECN/死锁避免、传输层 RTP/CTP/UTP/TPG、事务层 ROI/ROT/ROL/UNO、功能层 Load-Store/URMA/URPC、Home-User 内存模型与 UMMU 四级查表）。
+- **提取点 2**: 950 训练性能优化要点：CTP 免端到端重传（直连高可靠链路首选）、TPG+逐包负载均衡打满多路径、共享信用证模式提升 Buffer 利用率、事务切片防单通道阻塞、TAACK 聚合与 ROL 捎带、URPC 引用传参（规范明确适用 AI 训练传输与 NPU 计算相互掩盖）、多 Entity 协同的集合通信操作框架（HCCL over UB 的协议基础）。
+- **提取点 3**: 训练 Debug 要点：RAS 三级错误分类（A 类 CQE/EQE 单事务 → B 类 Entity/TPChannel/Jetty 异步事件 → C 类拓扑级 UBFM 处理）、典型故障协议层线索（hang 查信用证超时/VL 死锁/Retry Buffer 互锁；性能劣化查 Retrain 降速/重传计数/PSN 乱序区间/拥塞窗口震荡；Atomic Response 异常禁止重传防重复执行）。
+- **[create]** `wiki/05_fact/ub_protocol_base_spec_2_1.md` — 与 [[wiki/05_fact/ubx_950pr_hardware_specs]]、[[wiki/05_fact/npu_supernode_bandwidth_methodology]] 交叉关联
+
+## [2026-11-18] ingest-fact | 950PR UBX 机型硬件规格与组网架构
+- **来源**: `A5字节相关机型.mhtml`（机型对比表快照：1024 POD / 大禹DT / 950PR UBX / 950PR-PCIE 四列）。
+- **提取点 1**: UBX 整机形态——单机 16 卡非超节点（UB 域封闭单机）、X86×2（厂商未标）、425T 算力。
+- **提取点 2**: 两级互连（4卡fullmesh + 16卡UB SW）与带宽明细：4卡内 500 GB/s、16卡 400 GB/s、跨机 1825 RoCE 每 NPU 双向 50 GB/s（4 NPU 共享 1 网卡）、H2D 64 GB/s（PCIe5 x8）。
+- **提取点 3**: 内存 128GB@1.6TB/s / 112GB主供@1.4TB/s；与大禹DT/POD 的四机型横向对比表；"UBX 非超节点"的判定边界（UB 域是否跨单机）。
+- **[create]** `wiki/05_fact/ubx_950pr_hardware_specs.md` — 含 open_questions（CPU 厂商、500vs560 算术、400GB/s 口径方向）
+
+## [2026-11-18] ingest-fact | NPU 超节点带宽计算口径与方法论
+- **来源**: 大禹 64/128 卡方案材料的带宽推导会话（2026-11-17/18），源摘要 `raw/docs/2026-11-17-950dt-dayu-64-128card.md`。
+- **提取点 1**: 端口速率口径三层判据（材料 56 GB/s 单口自证 / 12 口×400G×2÷8=1.2TB/s 算术自洽 / 端口单向行业惯例），确立 400G 为单向、互连标称（NVLink/UB）为双向聚合、测试 algbw/busbw 为单向归一化。
+- **提取点 2**: 大禹三层带宽推导：柜内 UB 1.2 TB/s/卡（600 单向）、跨超节点 1825 UB→RoCE 200 GB/s/节点（NPU 均摊 50 双向/25 单向），Scale-Up:Out 收敛比 ≈12:1 及其对 TP/EP/PP/DP 并行策略的约束。
+- **提取点 3**: 双向带宽利用率本质（TX/RX 独立，单向负载只用一半；ring/pairwise 收发并行才兑现双向）、Ring AR 公式 B 取单向且因子已含双向收益、端口数交叉校验法（64×12=6×128=768）。
+- **[create]** `wiki/05_fact/npu_supernode_bandwidth_methodology.md` — 供通信性能分析与 benchmark 解读复用
+
 ## [2026-11-10] ingest-fact+tuning | Ascend A5 NDA/NDR 设备直驱 RDMA 通信架构与调优
 - **来源**: 华为内部社区 CANN SHMEM NDA 技术系列上下篇笔记（`D:\O1培训材料\ForA5Skill\CANN_SHMEM_NDA_下篇_AIV直驱RDMA_核心要点笔记.md`），已归档至 `raw/docs/CANN_SHMEM_NDA_核心要点笔记.md`（含 `rdma-vs-tcpip-diagram.svg`、`rdma-vs-roce-diagram.svg`）。
 - **提取点 1**: 厘清 NDR（数据直达、Host 组织提交）与 NDA（AIV 在 Kernel 内完成目标选择、WQE 构造、QP 选择、Doorbell 提交与完成管理）的控制路径差异，及与 NVIDIA GPUDirect/GDAKI 的类比关系；沉淀分层架构（Host 控制面 / AIV 数据面 / Backend Lowering）、编程模型四对象与 XSCALE/HNS_1825/IN_DIE 后端能力矩阵（Aggregate 仅 XSCALE+IN_DIE、RDMA Atomic 仅 XSCALE）。
@@ -297,3 +318,13 @@
 - **提取点 1**: 构建项目核心目录结构 (`wiki/`, `raw/`, `templates/`)。
 - **提取点 2**: 初始化 `.antigravityrules` 角色与工作流指令。
 - **提取点 3**: 建立 `index.md` 全局知识图谱入口。
+
+## [2026-11-17] migrate | ascend-llm-wiki 整体迁入
+- **[create]** `wiki/06_ascend_stack/` — 原 D:\codes\dj-oom\ascend-llm-wiki 全部 28 页（architecture/concepts/components/operations/references/troubleshooting）整体迁入，保留原子目录与 wikilink
+- **[create]** `raw/docs/2026-11-17-950dt-dayu-64-128card.md` — 大禹 64/128 卡 proposal 源摘要（受限分发）
+- **[create]** `wiki/06_ascend_stack/_CONVENTIONS_ascend-llm-wiki.md` — 原库 CLAUDE.md 规范留档
+- **[note]** 原 ingest-ascend-llm-wiki skill 同步移除；查询/巡检改用 ingest-ai-infra-wiki / query-ai-infra-wiki / lint-ai-infra-wiki
+
+## [2026-11-17] lint | health check
+- 检查 84 个 wiki 页面：死链 17（均为存量遗留，06_ascend_stack 迁移页零死链）、孤立页 15（已将 5 个 ascend 孤立页挂入根 index，剩 10 个存量）、陈旧页 67（>90 天，存量，建议后续复审）、frontmatter 缺失已自动补齐 26 个迁移页（last_updated/source）
+- 缺页候选（被引用未创建）：alignment_tools、custom_operators、hccl_optimization、mapping_table、megatron_npu、memory_management、overflow_handling、vllm_npu、logpdiff_drift、xllm_engine_scheduling、load_state_dict_persistent_false、memory_leak_libc_pytorch、ray_tuning、veturborpc_unix_socket、xllm_pydantic_mapping

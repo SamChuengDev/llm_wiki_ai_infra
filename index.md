@@ -75,6 +75,9 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - **DeepSpeed**: 加速库适配
 
 ### 5. [[wiki/05_fact/index|事实知识 (Facts)]]
+- [[wiki/05_fact/ub_protocol_base_spec_2_1|Fact: 灵衢 UB 基础规范 2.1 协议要点（950 训练性能优化与调试视角）]]
+- [[wiki/05_fact/npu_supernode_bandwidth_methodology|Fact: NPU 超节点带宽计算口径与方法论（单向/双向、Scale-Up/Out、busbw/algbw）]]
+- [[wiki/05_fact/ubx_950pr_hardware_specs|Fact: 950PR UBX 机型硬件规格与组网架构（单机16卡、两级UB互连）]]
 - [[wiki/05_fact/vlm_2b5_32rank_actor_rollout_deployment|Fact: VLM 2B5 xpu_gpt 32rank Actor 与 Rollout 部署形态]]
 - [[wiki/05_fact/xpu_gpt_torch_infer_merge_xg_comparison|Fact: xpu_gpt + torch inference 合并后 xg 回归对比结论]]
 - [[wiki/05_fact/vlm_2b5_vit_llm_deployment_architecture|Fact: VLM 2B5 VIT与LLM的混合部署架构约束]]
@@ -134,3 +137,16 @@ LLM 在执行 Query 时应首先读取本文件定位相关页面。
 - `[2026-04-11]` 排错: [[wiki/00_bugfix/veturborpc_env_override|Pydantic 拦截与 xLLM 环境映射机制]]
 - `[2026-04-11]` 精度对齐: [[wiki/02_precision/vlm_rl_actor_blind_diff|VLM RL logprobs_diff 发散根因]]
 - `[2026-04-11]` 初始架构构建
+
+---
+
+### 6. [[wiki/06_ascend_stack/|Ascend 软件栈与 A5 硬件知识]] (2026-11-17 自 ascend-llm-wiki 整体迁入)
+
+原独立知识库 `ascend-llm-wiki`（28 页）整体迁入，保留原子目录结构：
+
+- `06_ascend_stack/architecture/` — CANN 全栈架构、TorchNPU、OpPlugin、A5 算子开发（含 [[wiki/06_ascend_stack/architecture/dayu-supernode-topology|大禹超节点架构与 D2D 带宽口径]]、[[wiki/06_ascend_stack/architecture/a5-kernel-dev|A5 算子开发指南]]、[[wiki/06_ascend_stack/architecture/ascend-software-stack|昇腾软件栈总览]]）
+- `06_ascend_stack/concepts/` — FP8/MX 量化、[[wiki/06_ascend_stack/concepts/a5-lowprecision-training|A5 低精度训练格式原理]]、数据类型
+- `06_ascend_stack/components/` — HCCL / AscendCL / aclnn / ATB
+- `06_ascend_stack/operations/` — 训练环境配置、环境变量、A5 通信调优
+- `06_ascend_stack/references/` — A5 硬件规格、[[wiki/06_ascend_stack/references/a5-lowprecision-apis|A5 低精度算子 API 与性能数据]]、常用命令、版本配套
+- `06_ascend_stack/troubleshooting/` — HCCL 错误排查、[[wiki/06_ascend_stack/troubleshooting/a5-kernel-issues|A5 算子开发常见问题与坑点]]
